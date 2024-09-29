@@ -38,8 +38,10 @@ fn main() {
 
     // RAM:
     println!("=> RAM:");
-    println!("Total: {} MB", sys.total_memory() / 1000);
-    println!("Used: {} MB", sys.used_memory() / 1000);
+    let total_mem = sys.total_memory() / 1000;
+    let used_mem = sys.used_memory() / 1000;
+    println!("Total: {} MB", total_mem);
+    println!("Used: {} MB", used_mem);
 
     // Components temp:
     let components = Components::new_with_refreshed_list();
