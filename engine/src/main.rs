@@ -38,8 +38,8 @@ fn main() {
 
     // RAM:
     println!("=> RAM:");
-    let total_mem = sys.total_memory() / 1000;
-    let used_mem = sys.used_memory() / 1000;
+    let total_mem = sys.total_memory() / 1000000;
+    let used_mem = sys.used_memory() / 1000000;
     println!("Total: {} MB", total_mem);
     println!("Used: {} MB", used_mem);
 
