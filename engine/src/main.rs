@@ -17,16 +17,6 @@ fn main() {
         ("nb_cpu", Some(sys.cpus().len().to_string())),
     ]);
 
-    // Display processes IP:
-    for (pid, process) in sys.processes() {
-        println!(
-            "[{pid}] {:?} {:?} {:?}", 
-            process.name(), 
-            process.disk_usage(), 
-            process.cpu_usage()
-        )
-    }
-
     // Display all disk info:
     println!("=> disks:");
     let disks = Disks::new_with_refreshed_list();
@@ -50,5 +40,15 @@ fn main() {
     println!("=> components:");
     for component in &components {
         println!("{component:?}");
+    }
+
+    // CPU usage:
+    loop {
+        sys.refresh_cpu_all();
+        for cpu in sys.cpus() {
+            println!("{}%", cpu.cpu_usage());
+        }
+
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
     }
 }
