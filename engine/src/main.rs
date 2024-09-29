@@ -44,14 +44,21 @@ fn main() {
     }
 
     // CPU usage:
-    loop {
-        println!("CPU use rate: ");
-        sys.refresh_cpu_all();
-        for cpu in sys.cpus() {
-            println!("{}%", cpu.cpu_usage());
-        }
+    // loop {
+    //     println!("CPU use rate: ");
+    //     sys.refresh_cpu_all();
+    //     for cpu in sys.cpus() {
+    //         println!("{}%", cpu.cpu_usage());
+    //     }
 
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        clearscreen::clear().unwrap();
+    //     std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    //     clearscreen::clear().unwrap();
+    // }
+    println!("CPU use rate: ");
+    sys.refresh_cpu_all();
+    for cpu in sys.cpus() {
+        println!("{}%", cpu.cpu_usage());
     }
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    clearscreen::clear().unwrap();
 }
