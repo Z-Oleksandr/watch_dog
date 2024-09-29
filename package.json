@@ -1,0 +1,19 @@
+{
+    "name": "system_monitor",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Z-Oleksandr/watch_dog.git"
+    },
+    "author": "seraphim",
+    "license": "GPL-3.0-or-later",
+    "bugs": {
+        "url": "https://github.com/Z-Oleksandr/watch_dog/issues"
+    },
+    "homepage": "https://github.com/Z-Oleksandr/watch_dog#readme"
+}
