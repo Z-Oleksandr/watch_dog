@@ -60,5 +60,4 @@ fn main() {
         println!("{}%", cpu.cpu_usage());
     }
     std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    clearscreen::clear().unwrap();
 }
