@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 sysinfo = "0.31.4"
+clearscreen = "3.0.0"
