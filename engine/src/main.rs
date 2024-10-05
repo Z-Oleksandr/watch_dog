@@ -124,7 +124,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
 #[tokio::main]
 async fn main() {
-    let addr = "127.0.0.1:8999";
+    // let addr = "127.0.0.1:8999";
+    let addr = "0.0.0.0:8999";
     let listener = TcpListener::bind(&addr).await.expect("Failed to build");
     println!("WebSocket server listening on {}", addr);
 
