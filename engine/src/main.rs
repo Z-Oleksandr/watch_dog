@@ -7,55 +7,106 @@ use futures::{StreamExt, SinkExt};
 
 #[derive(Serialize)]
 struct SystemStats {
-    cpu_usage: f32,
+    data_type: u32,
+    cpu_usage: Vec<f32>,
     ram_total: u64,
     ram_used: u64,
-    disk_total: u64,
-    disk_used: u64,
+    disks_used_space: Vec<u64>,
     network_received: u64,
     network_transmitted: u64,
+}
+
+#[derive(Serialize)]
+struct SystemData {
+    data_type: u32,
+    num_cpus: usize,
+    num_disks: usize,
+    disks_space: Vec<u64>,
+    init_ram_total: u64,
 }
 
 async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     println!("New Socket connection: {}", addr);
 
-    let ws_stream = accept_async(raw_stream).await.expect("Failed to accept");
+    let ws_stream = accept_async(raw_stream)
+        .await
+        .expect("Failed to accept");
 
     // Split ws stream into sender and receiver
     let (mut write, _) = ws_stream.split();
 
     let mut sys = System::new_all();
 
+    // Get static disks data
+    let disks = Disks::new_with_refreshed_list();
+    let mut disks_space = Vec::new();
+
+    // Init Network data
+    let mut networks = Networks::new_with_refreshed_list();
+
+    for disk in disks.list() {
+        disks_space.push(disk.total_space() / 1000000000);
+    }
+
+    // Send static system data
+    let system_data = SystemData {
+        data_type: 0,
+        num_cpus: sys.cpus().len(),
+        num_disks: disks.len(),
+        disks_space,
+        init_ram_total: sys.total_memory() / 1000000000,
+    };
+
+    let system_data_json = serde_json::to_string(&system_data).unwrap();
+    write.send(Message::Text(system_data_json))
+        .await.expect("Error sending static data");
+
+    time::sleep(Duration::from_secs(3)).await;
+
     loop {
         sys.refresh_all();
 
-        let cpu_usage = sys.global_cpu_usage();
-        let ram_total = sys.total_memory();
-        let ram_used = sys.used_memory();
+        // CPU data
+        let cpu_usage = sys.cpus()
+            .iter()
+            .map(|cpu| cpu.cpu_usage())
+            .collect();
 
-        // For now just one disk
+        // RAM data
+        let ram_total = sys.total_memory() / 1000000000;
+        let ram_used = sys.used_memory() / 1000000000;
+
+        // Disk data
         let disks = Disks::new_with_refreshed_list();
-        let disk = disks.get(0).expect("No disk found");
-        let disk_total = disk.total_space();
-        let disk_available = disk.available_space();
-        let disk_used = disk_total - disk_available;
+        let mut disks_used_space = Vec::new();
 
-        let networks = Networks::new_with_refreshed_list();
-        let mut net_received = 0;
-        let mut net_transmitted = 0;
+        for disk in disks.list() {
+            disks_used_space.push(
+                (disk.total_space() - disk.available_space()) / 1000000000
+            );
+        }
+
+        // Network data
+        networks.refresh();
+        let mut interfaces = Vec::new();
+        let mut network_received = 0;
+        let mut network_transmitted = 0;
         for (_iface, data) in &networks {
-            net_received += data.total_received();
-            net_transmitted += data.total_transmitted();
+            interfaces.push(_iface);
+            network_received += (data.received() * 8) / 1000;
+            network_transmitted += (data.transmitted() * 8) / 1000;
+            println!("Rec: {}", data.received());
+            println!("Transmit: {}", data.transmitted());
         }
 
         let stats = SystemStats {
+            data_type: 1,
             cpu_usage,
             ram_total,
             ram_used,
-            disk_total,
-            disk_used,
-            network_received: net_received,
-            network_transmitted: net_transmitted,
+            disks_used_space,
+            network_received,
+            network_transmitted,
         };
 
         // Serialize stats to JSON
