@@ -1,8 +1,8 @@
 use std::{collections::HashMap, net::SocketAddr, time::Duration};
-use sysinfo::{NetworkData, Networks, Process, System, Components, Disks};
+use sysinfo::{Networks, System, Components, Disks};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
-use serde::{Serialize};
+use serde::Serialize;
 use futures::{StreamExt, SinkExt};
 
 #[derive(Serialize)]
@@ -137,10 +137,7 @@ async fn main() {
 
     sys.refresh_all();
 
-    let total_memory = sys.total_memory();
-    let used_memory = sys.used_memory();
-
-    let mut sys_info = HashMap::from([
+    let _sys_info = HashMap::from([
         ("name", System::name()),
         ("kernel", System::kernel_version()),
         ("os", System::os_version()),
