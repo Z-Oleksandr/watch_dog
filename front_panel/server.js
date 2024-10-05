@@ -9,7 +9,7 @@ app.use(express.static(__dirname));
 app.use(
     "/ws",
     createProxyMiddleware({
-        target: "ws://127.0.0.1:8999",
+        target: "ws://0.0.0.0:8999",
         ws: true,
     })
 );
