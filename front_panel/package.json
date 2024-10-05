@@ -6,8 +6,10 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "nodemon server.js",
+        "engine-windows": "start ../engine/target/release/engine.exe",
         "engine": "../engine/target/release/engine",
-        "launch": "npm-run-all --parallel dev engine"
+        "launch": "npm-run-all --parallel dev engine",
+        "launchWin": "npm-run-all --parallel dev engine-windows"
     },
     "keywords": [],
     "author": "",

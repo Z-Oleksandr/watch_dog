@@ -95,8 +95,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             interfaces.push(_iface);
             network_received += (data.received() * 8) / 1000;
             network_transmitted += (data.transmitted() * 8) / 1000;
-            println!("Rec: {}", data.received());
-            println!("Transmit: {}", data.transmitted());
+            // println!("Rec: {}", data.received());
+            // println!("Transmit: {}", data.transmitted());
         }
 
         let stats = SystemStats {
