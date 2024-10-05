@@ -1,4 +1,4 @@
-const ws = new WebSocket("ws://127.0.0.1:8999");
+const ws = new WebSocket(`ws://${window.location.hostname}:8999`);
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");
