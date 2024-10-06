@@ -5,6 +5,9 @@ use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use serde::Serialize;
 use futures::{StreamExt, SinkExt};
 
+mod helpers;
+use helpers::is_not_pidor;
+
 #[derive(Serialize)]
 struct SystemStats {
     data_type: u32,
@@ -37,23 +40,19 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
     let mut sys = System::new_all();
 
-    // For linux we need to filter non-physical drives
-    let pidors: [&str; 3] = [
-        "tmpfs",
-        "overlay",
-        "devtmpfs"
-    ];
-
     // Get static disks data
     let disks = Disks::new_with_refreshed_list();
     let mut disks_space = Vec::new();
 
+    for disk in disks.list() {
+        // For linux we need to filter non-physical drives
+        if is_not_pidor(disk.name()) {
+            disks_space.push(disk.total_space() / 1000000000);
+        }
+    }
+
     // Init Network data
     let mut networks = Networks::new_with_refreshed_list();
-
-    for disk in disks.list() {
-        disks_space.push(disk.total_space() / 1000000000);
-    }
 
     // Send static system data
     let system_data = SystemData {
@@ -89,12 +88,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
         for disk in disks.list() {
             // For linux we need to filter non-physical drives
-            let disk_name = disk.name();
-            let clean_disk_name = disk_name.to_str().unwrap().trim_matches('\"');
-            println!("Disk name: {}", &clean_disk_name);
-            let not_pidor = !pidors.contains(&clean_disk_name);
-
-            if not_pidor {
+            if is_not_pidor(disk.name()) {
                 disks_used_space.push(
                     (disk.total_space() - disk.available_space()) / 1000000000
                 );
