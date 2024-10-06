@@ -90,8 +90,9 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
         for disk in disks.list() {
             // For linux we need to filter non-physical drives
             let disk_name = disk.name();
-            // println!("Disk name: {:#?}", &disk_name);
-            let not_pidor = !pidors.contains(&disk_name.to_str().unwrap());
+            let clean_disk_name = disk_name.to_str().unwrap().trim_matches('\"');
+            // println!("Disk name: {:#?}", &clean_disk_name);
+            let not_pidor = !pidors.contains(&clean_disk_name);
 
             if not_pidor {
                 disks_used_space.push(
