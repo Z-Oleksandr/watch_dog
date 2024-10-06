@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::SocketAddr, time::Duration};
+use std::{collections::{HashMap, HashSet}, net::SocketAddr, time::Duration};
 use sysinfo::{Networks, System, Components, Disks};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
@@ -6,7 +6,7 @@ use serde::Serialize;
 use futures::{StreamExt, SinkExt};
 
 mod helpers;
-use helpers::is_not_pidor;
+use helpers::{is_initialized_disk, is_not_pidor};
 
 #[derive(Serialize)]
 struct SystemStats {
@@ -45,9 +45,11 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     let mut disks_space = Vec::new();
     let mut disk_count: u32 = 0;
 
+    let mut disk_register: HashSet<String> = HashSet::new();
+
     for disk in disks.list() {
         // For linux we need to filter non-physical drives
-        if is_not_pidor(disk.name()) {
+        if is_not_pidor(disk.name(), &mut disk_register) {
             disks_space.push(disk.total_space() / 1000000000);
             disk_count += 1;
         }
@@ -90,7 +92,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
         for disk in disks.list() {
             // For linux we need to filter non-physical drives
-            if is_not_pidor(disk.name()) {
+            if is_initialized_disk(disk.name(), &disk_register) {
                 disks_used_space.push(
                     (disk.total_space() - disk.available_space()) / 1000000000
                 );
