@@ -23,7 +23,7 @@ struct SystemStats {
 struct SystemData {
     data_type: u32,
     num_cpus: usize,
-    num_disks: usize,
+    num_disks: u32,
     disks_space: Vec<u64>,
     init_ram_total: u64,
 }
@@ -43,12 +43,13 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     // Get static disks data
     let disks = Disks::new_with_refreshed_list();
     let mut disks_space = Vec::new();
+    let mut disk_count: u32 = 0;
 
     for disk in disks.list() {
         // For linux we need to filter non-physical drives
         if is_not_pidor(disk.name()) {
-	    println!("Disk names: {:#?}", disk.name());
             disks_space.push(disk.total_space() / 1000000000);
+            disk_count += 1;
         }
     }
 
@@ -59,7 +60,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     let system_data = SystemData {
         data_type: 0,
         num_cpus: sys.cpus().len(),
-        num_disks: disks.len(),
+        num_disks: disk_count,
         disks_space,
         init_ram_total: sys.total_memory() / 1000000000,
     };
