@@ -37,6 +37,13 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
     let mut sys = System::new_all();
 
+    // For linux we need to filter non-physical drives
+    let pidors: [&str; 3] = [
+        "tmpfs",
+        "overlay",
+        "devtmpfs"
+    ];
+
     // Get static disks data
     let disks = Disks::new_with_refreshed_list();
     let mut disks_space = Vec::new();
@@ -81,9 +88,16 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
         let mut disks_used_space = Vec::new();
 
         for disk in disks.list() {
-            disks_used_space.push(
-                (disk.total_space() - disk.available_space()) / 1000000000
-            );
+            // For linux we need to filter non-physical drives
+            let disk_name = disk.name();
+            // println!("Disk name: {:#?}", &disk_name);
+            let not_pidor = !pidors.contains(&disk_name.to_str().unwrap());
+
+            if not_pidor {
+                disks_used_space.push(
+                    (disk.total_space() - disk.available_space()) / 1000000000
+                );
+            }
         }
 
         // Network data
