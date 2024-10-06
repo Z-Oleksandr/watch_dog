@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, collections::HashSet};
+use std::{ffi::OsStr, collections::HashSet, path::Path};
 
 // For linux we need to filter non-physical drives
 pub fn is_not_pidor(disk_name: &OsStr, disk_register: &mut HashSet<String>) -> bool {
@@ -20,7 +20,17 @@ pub fn is_not_pidor(disk_name: &OsStr, disk_register: &mut HashSet<String>) -> b
     false
 }
 
-pub fn is_initialized_disk(disk_name: &OsStr, disk_register: &HashSet<String>) -> bool {
+pub fn is_initialized_disk(
+        disk_name: &OsStr, 
+        disk_register: &HashSet<String>,
+        disk_mount_point: &Path
+    ) -> bool {
+    // Exclude Snap-related mounts
+    let mount_path = disk_mount_point.to_str().unwrap();
+    if mount_path.starts_with("/var/snap") {
+        return false;
+    }
+
     let clean_disk_name = disk_name
         .to_str()
         .unwrap()

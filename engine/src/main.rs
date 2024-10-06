@@ -92,7 +92,11 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
         for disk in disks.list() {
             // For linux we need to filter non-physical drives
-            if is_initialized_disk(disk.name(), &disk_register) {
+            if is_initialized_disk(
+                    disk.name(), 
+                    &disk_register,
+                    disk.mount_point()
+                ) {
                 disks_used_space.push(
                     (disk.total_space() - disk.available_space()) / 1000000000
                 );
