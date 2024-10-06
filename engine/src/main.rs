@@ -47,6 +47,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     for disk in disks.list() {
         // For linux we need to filter non-physical drives
         if is_not_pidor(disk.name()) {
+	    println!("Disk names: {:#?}", disk.name());
             disks_space.push(disk.total_space() / 1000000000);
         }
     }
