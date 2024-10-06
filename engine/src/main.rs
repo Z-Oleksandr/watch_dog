@@ -61,7 +61,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     write.send(Message::Text(system_data_json))
         .await.expect("Error sending static data");
 
-    time::sleep(Duration::from_secs(3)).await;
+    time::sleep(Duration::from_secs(5)).await;
 
     loop {
         sys.refresh_all();

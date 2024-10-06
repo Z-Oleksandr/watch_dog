@@ -120,7 +120,7 @@ ws.onmessage = function (event) {
 
         ram_gauge = new Gauge(createRamCanvas()).setOptions(opts_ram);
         ram_gauge.maxValue = data_stream.init_ram_total;
-	console.log("Ram total: " + data_stream.init_ram_total);
+        console.log("Ram total: " + data_stream.init_ram_total);
         ram_gauge.setMinValue(0);
         ram_gauge.animationSpeed = 500;
         start_gauges([ram_gauge]);
@@ -225,7 +225,7 @@ ws.onmessage = function (event) {
 
         // RAM
         ram_gauge.set(data_stream.ram_used);
-	console.log(data_stream.ram_used);
+        console.log(data_stream.ram_used);
 
         // Disks
         data_stream.disks_used_space.forEach((u_s, i) => {
@@ -305,7 +305,7 @@ function start_gauges(gauges) {
             gauge.set(0);
             gauge.animationSpeed = 1024;
         });
-    }, 2000);
+    }, 2500);
 }
 
 function createRamCanvas() {
