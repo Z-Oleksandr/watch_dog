@@ -1,10 +1,12 @@
 {
-    "name": "system_monitor",
+    "name": "watch_dog",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "win_exe_engine": "copy .\\engine\\target\\release\\engine.exe .\\engine\\app_windows\\",
+        "lin_exe_engine": "cp -r engine/target/release/engine engine/app_linux/engine"
     },
     "repository": {
         "type": "git",
