@@ -123,6 +123,7 @@ ws.onmessage = function (event) {
         console.log("Ram total: " + data_stream.init_ram_total);
         ram_gauge.setMinValue(0);
         ram_gauge.animationSpeed = 500;
+
         start_gauges([ram_gauge]);
 
         // init Disks
