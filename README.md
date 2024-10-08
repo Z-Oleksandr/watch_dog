@@ -24,9 +24,10 @@ And that is basically it, **however** that is more of a test run. In order to fu
 2. Choose a process manager, which will allow the app to run in the background, for example pm2 (a process manager for Node.js apps)
 3. Execute `npm install -g pm2`
 4. Move to front_panel dir `cd front_panel/`
-5. Start the app `pm2 start npm --name watch_dog -- run watch_dog`
-6. If you have firewall enabled, you need to allow access at port 9000 `ufw allow 9000`
-7. Now you can access the app from any device in your local network at `http://<server-private-ip>:9000`
-8. To have pm2 automatically run on system startup execute: `pm2 startup`
+5. Execute `npm install`
+6. Start the app `pm2 start npm --name watch_dog -- run watch_dog`
+7. If you have firewall enabled, you need to allow access at port 9000 `ufw allow 9000`
+8. Now you can access the app from any device in your local network at `http://<server-private-ip>:9000`
+9. To have pm2 automatically run on system startup execute: `pm2 startup`
 
 Note: On a linux system you might need to make sure the binary has executable permissions. For example from project root execute: `chmod +x /engine/app_linux/engine`
