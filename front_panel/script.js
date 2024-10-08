@@ -13,7 +13,7 @@ let network = document.getElementById("network");
 let opts_general = {
     angle: -0.2,
     lineWidth: 0.15,
-    radiusScale: 0.7,
+    radiusScale: 0.69,
     pointer: {
         length: 0.6,
         strokeWidth: 0.035,
@@ -63,7 +63,7 @@ ws.onmessage = function (event) {
             canvas.id = `cpuGauge${i}`;
             canvas.width = "200";
             canvas.height = "200";
-            canvas.style.margin = "10px";
+            // canvas.style.margin = "10px";
             document.getElementById("cpu").appendChild(canvas);
 
             let cpu_gauge = new Gauge(canvas).setOptions(opts_general);
