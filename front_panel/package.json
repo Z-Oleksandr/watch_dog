@@ -9,7 +9,11 @@
         "engine-windows": "start ../engine/target/release/engine.exe",
         "engine": "../engine/target/release/engine",
         "launch": "npm-run-all --parallel dev engine",
-        "launchWin": "npm-run-all --parallel dev engine-windows"
+        "launchWin": "npm-run-all --parallel dev engine-windows",
+        "engine_prebuilt_win": "start ../engine/app_windows/engine.exe",
+        "engine_prebuild_linux": "../engine/app_linux/engine",
+        "watch_dog_win": "npm-run-all --parallel dev engine_prebuilt_win",
+        "watch_dog": "npm-run-all --parallel dev engine_prebuild_linux"
     },
     "keywords": [],
     "author": "",
