@@ -343,9 +343,15 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
         let hold = cols;
         cols = rows;
         rows = hold;
-        opts_general.staticLabels.font = "9px orbitron";
-        conHeight -= 50;
-        conWidth -= 10;
+        if (num_cpus > 4) {
+            opts_general.staticLabels.font = "9px orbitron";
+            conHeight -= 50;
+            conWidth -= 10;
+        } else {
+            opts_general.staticLabels.font = "12px orbitron";
+            conHeight -= 80;
+            conWidth -= 10;
+        }
     }
 
     let gaugeWidth = Math.floor(conWidth / cols) - spacing;
