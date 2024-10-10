@@ -61,6 +61,10 @@ body {
     font-weight: 600;
 }
 
+.cTitle {
+    margin-bottom: 0;
+}
+
 .rTitle {
     position: relative;
     left: -110px;
