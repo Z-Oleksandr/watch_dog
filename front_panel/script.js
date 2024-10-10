@@ -10,6 +10,10 @@ let disk_t = document.getElementById("disk_total");
 let disk_u = document.getElementById("disk_used");
 let network = document.getElementById("network");
 
+let cpu_section = document.getElementsByClassName("cSec")[0];
+let cSec_width = cpu_section.offsetWidth;
+let cSec_height = cpu_section.offsetHeight;
+
 let opts_general = {
     angle: -0.2,
     lineWidth: 0.15,
@@ -24,7 +28,7 @@ let opts_general = {
     highDpiSupport: true,
     generateGradient: true,
     staticLabels: {
-        font: "20px sans-serif",
+        font: "18px orbitron",
         labels: [0, 20, 60, 80, 100],
         color: "#000000",
         fractionDigits: 0,
@@ -58,11 +62,15 @@ ws.onmessage = function (event) {
 
     if (data_stream.data_type == 0) {
         // init CPU
+        let numCPUs = data_stream.num_cpus;
+
+        let cpuGaugeSize = findGaugeSize(numCPUs, cSec_width, cSec_height, 50);
+
         for (let i = 0; i < data_stream.num_cpus; i++) {
             let canvas = document.createElement("canvas");
             canvas.id = `cpuGauge${i}`;
-            canvas.width = "200";
-            canvas.height = "200";
+            canvas.width = cpuGaugeSize[0];
+            canvas.height = cpuGaugeSize[1];
             // canvas.style.margin = "10px";
             document.getElementById("cpu").appendChild(canvas);
 
@@ -78,7 +86,7 @@ ws.onmessage = function (event) {
         // init RAM
         let opts_ram = Object.assign({}, opts_general, {
             staticLabels: {
-                font: "20px sans-serif",
+                font: "18px orbitron",
                 labels: [
                     0,
                     (0.8 * data_stream.init_ram_total) / 3,
@@ -136,7 +144,7 @@ ws.onmessage = function (event) {
 
             let otps_disk = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "20px sans-serif",
+                    font: "18px orbitron",
                     labels: [
                         0,
                         data_stream.disks_space[i] / 4,
@@ -191,7 +199,7 @@ ws.onmessage = function (event) {
 
             let opts_net = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "20px sans-serif",
+                    font: "18px orbitron",
                     labels: [0, 125, 250, 375, 500],
                     color: "#000000",
                     fractionDigits: 0,
@@ -240,7 +248,7 @@ ws.onmessage = function (event) {
 
         let opts_net_max = Object.assign({}, opts_general, {
             staticLabels: {
-                font: "20px sans-serif",
+                font: "18px orbitron",
                 labels: [0, 250, 500, 750, 1000],
                 color: "#000000",
                 fractionDigits: 0,
@@ -318,4 +326,36 @@ function createRamCanvas() {
     ram_canvas.style.margin = "10px";
     document.getElementById("ram").appendChild(ram_canvas);
     return ram_canvas;
+}
+
+function findGaugeSize(number, conWidth, conHeight, spacing) {
+    let cols, rows;
+    let root = Math.sqrt(number);
+    if (Number.isInteger(root)) {
+        cols = root;
+        rows = root;
+    } else {
+        cols = Math.ceil(root);
+        rows = Math.floor(root);
+    }
+
+    if (conHeight > conWidth) {
+        let hold = cols;
+        cols = rows;
+        rows = hold;
+        if (number > 4) {
+            opts_general.staticLabels.font = "9px orbitron";
+            conHeight -= 50;
+            conWidth -= 10;
+        } else {
+            opts_general.staticLabels.font = "12px orbitron";
+            conHeight -= 180;
+            conWidth -= 30;
+        }
+    }
+
+    let gaugeWidth = Math.floor(conWidth / cols) - spacing;
+    let gaugeHeight = Math.floor(conHeight / rows) - spacing;
+
+    return [gaugeWidth, gaugeHeight];
 }
