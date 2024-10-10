@@ -14,6 +14,7 @@ body {
     background: linear-gradient(145deg, #616161, #f0f0f0);
     background-color: #636262; /* fallback for older browsers */
     background-size: cover;
+    background-repeat: no-repeat;
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
     margin: 0;
     padding: 0;
@@ -32,12 +33,23 @@ body {
 
 .container {
     width: 100%;
-    max-height: 80vh;
+    height: 80vh;
     display: grid;
     align-items: center;
     grid-template-columns: 2fr 1fr 1fr;
     grid-template-rows: auto;
     grid-template-areas: "cpu ramandnet disk";
+}
+
+@media only screen and (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+            "cpu"
+            "ramandnet"
+            "disk";
+    }
 }
 
 .cTitle {
@@ -71,8 +83,8 @@ body {
 }
 
 #cpu canvas {
-    width: 8vw;
-    height: auto;
+    /* width: 8vw;
+    height: auto; */
     padding: 10px;
 }
 

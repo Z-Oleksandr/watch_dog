@@ -10,6 +10,10 @@ let disk_t = document.getElementById("disk_total");
 let disk_u = document.getElementById("disk_used");
 let network = document.getElementById("network");
 
+let cpu_section = document.getElementsByClassName("cSec")[0];
+let cSec_width = cpu_section.offsetWidth;
+let cSec_height = cpu_section.offsetHeight;
+
 let opts_general = {
     angle: -0.2,
     lineWidth: 0.15,
@@ -58,11 +62,15 @@ ws.onmessage = function (event) {
 
     if (data_stream.data_type == 0) {
         // init CPU
+        let numCPUs = data_stream.num_cpus;
+
+        let cpuGaugeSize = findGaugeSize(numCPUs, cSec_width, cSec_height, 50);
+
         for (let i = 0; i < data_stream.num_cpus; i++) {
             let canvas = document.createElement("canvas");
             canvas.id = `cpuGauge${i}`;
-            canvas.width = "200";
-            canvas.height = "200";
+            canvas.width = cpuGaugeSize[0];
+            canvas.height = cpuGaugeSize[1];
             // canvas.style.margin = "10px";
             document.getElementById("cpu").appendChild(canvas);
 
@@ -318,4 +326,21 @@ function createRamCanvas() {
     ram_canvas.style.margin = "10px";
     document.getElementById("ram").appendChild(ram_canvas);
     return ram_canvas;
+}
+
+function findGaugeSize(number, conWidth, conHeight, spacing) {
+    let cols, rows;
+    let root = Math.sqrt(number);
+    if (Number.isInteger(root)) {
+        cols = root;
+        rows = root;
+    } else {
+        cols = Math.ceil(root);
+        rows = Math.floor(root);
+    }
+
+    let gaugeWidth = Math.floor(conWidth / cols) - spacing;
+    let gaugeHeight = Math.floor(conHeight / rows) - spacing;
+
+    return [gaugeWidth, gaugeHeight];
 }
