@@ -343,7 +343,7 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
         let hold = cols;
         cols = rows;
         rows = hold;
-        if (num_cpus > 4) {
+        if (number > 4) {
             opts_general.staticLabels.font = "9px orbitron";
             conHeight -= 50;
             conWidth -= 10;
