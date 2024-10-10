@@ -349,8 +349,8 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
             conWidth -= 10;
         } else {
             opts_general.staticLabels.font = "12px orbitron";
-            conHeight -= 80;
-            conWidth -= 10;
+            conHeight -= 180;
+            conWidth -= 30;
         }
     }
 
