@@ -28,7 +28,7 @@ let opts_general = {
     highDpiSupport: true,
     generateGradient: true,
     staticLabels: {
-        font: "18px sans-serif",
+        font: "18px orbitron",
         labels: [0, 20, 60, 80, 100],
         color: "#000000",
         fractionDigits: 0,
@@ -86,7 +86,7 @@ ws.onmessage = function (event) {
         // init RAM
         let opts_ram = Object.assign({}, opts_general, {
             staticLabels: {
-                font: "18px sans-serif",
+                font: "18px orbitron",
                 labels: [
                     0,
                     (0.8 * data_stream.init_ram_total) / 3,
@@ -144,7 +144,7 @@ ws.onmessage = function (event) {
 
             let otps_disk = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "18px sans-serif",
+                    font: "18px orbitron",
                     labels: [
                         0,
                         data_stream.disks_space[i] / 4,
@@ -199,7 +199,7 @@ ws.onmessage = function (event) {
 
             let opts_net = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "18px sans-serif",
+                    font: "18px orbitron",
                     labels: [0, 125, 250, 375, 500],
                     color: "#000000",
                     fractionDigits: 0,
@@ -248,7 +248,7 @@ ws.onmessage = function (event) {
 
         let opts_net_max = Object.assign({}, opts_general, {
             staticLabels: {
-                font: "18px sans-serif",
+                font: "18px orbitron",
                 labels: [0, 250, 500, 750, 1000],
                 color: "#000000",
                 fractionDigits: 0,
@@ -337,6 +337,15 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
     } else {
         cols = Math.ceil(root);
         rows = Math.floor(root);
+    }
+
+    if (conHeight > conWidth) {
+        let hold = cols;
+        cols = rows;
+        rows = hold;
+        opts_general.staticLabels.font = "9px orbitron";
+        conHeight -= 50;
+        conWidth -= 10;
     }
 
     let gaugeWidth = Math.floor(conWidth / cols) - spacing;
