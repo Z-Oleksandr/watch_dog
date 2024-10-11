@@ -339,6 +339,9 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
         rows = Math.floor(root);
     }
 
+    let gaugeWidth;
+    let gaugeHeight;
+
     if (conHeight > conWidth) {
         let hold = cols;
         cols = rows;
@@ -352,10 +355,12 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
             conHeight -= 180;
             conWidth -= 30;
         }
+        gaugeWidth = Math.floor(conWidth / cols) - spacing;
+        gaugeHeight = gaugeWidth;
+    } else {
+        gaugeWidth = Math.floor(conWidth / cols) - spacing;
+        gaugeHeight = Math.floor(conHeight / rows) - spacing;
     }
-
-    let gaugeWidth = Math.floor(conWidth / cols) - spacing;
-    let gaugeHeight = Math.floor(conHeight / rows) - spacing;
 
     return [gaugeWidth, gaugeHeight];
 }
