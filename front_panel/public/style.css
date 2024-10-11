@@ -24,6 +24,11 @@ body {
 
 .thatsAllFolks {
     display: inline;
+    width: 99vw;
+}
+
+.mainHeaderContainer {
+    max-width: 80vw;
 }
 
 .mainHeader {
@@ -32,7 +37,7 @@ body {
 }
 
 .container {
-    width: 100%;
+    width: 99vw;
     height: 80vh;
     display: grid;
     align-items: center;
@@ -65,7 +70,7 @@ body {
     }
 
     .section {
-        height: auto;
+        max-height: 50vh;
     }
 
     body {
@@ -100,12 +105,16 @@ body {
 
 .rTitle {
     position: relative;
-    left: -110px;
+}
+
+.nTitle {
+    position: relative;
+    left: -11px;
 }
 
 @media only screen and (max-width: 768px) {
     .section {
-        max-width: 93vw;
+        max-width: 80vw;
         padding: 3px;
     }
 
@@ -113,13 +122,9 @@ body {
         margin: 0;
     }
 
-    .nTitle {
+    /* .nTitle {
         padding-left: 10px;
-    }
-
-    .rTitle {
-        left: -100px;
-    }
+    } */
 }
 
 #network {
