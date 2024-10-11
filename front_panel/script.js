@@ -11,8 +11,14 @@ let disk_u = document.getElementById("disk_used");
 let network = document.getElementById("network");
 
 let cpu_section = document.getElementsByClassName("cSec")[0];
-let cSec_width = cpu_section.offsetWidth;
-let cSec_height = cpu_section.offsetHeight;
+let ramandnet_section = document.getElementsByClassName("ramandnet")[0];
+
+function getSectionSize(section) {
+    let sec_width = section.offsetWidth;
+    let sec_height = section.offsetHeight;
+
+    return [sec_width, sec_height];
+}
 
 let opts_general = {
     angle: -0.2,
@@ -29,7 +35,7 @@ let opts_general = {
     generateGradient: true,
     staticLabels: {
         font: "18px orbitron",
-        labels: [0, 20, 60, 80, 100],
+        labels: [0, 60, 100],
         color: "#000000",
         fractionDigits: 0,
     },
@@ -63,8 +69,13 @@ ws.onmessage = function (event) {
     if (data_stream.data_type == 0) {
         // init CPU
         let numCPUs = data_stream.num_cpus;
-
-        let cpuGaugeSize = findGaugeSize(numCPUs, cSec_width, cSec_height, 50);
+        let cSec_size = getSectionSize(cpu_section);
+        let cpuGaugeSize = findGaugeSize(
+            numCPUs,
+            cSec_size[0],
+            cSec_size[1],
+            50
+        );
 
         for (let i = 0; i < data_stream.num_cpus; i++) {
             let canvas = document.createElement("canvas");
@@ -189,12 +200,20 @@ ws.onmessage = function (event) {
         start_gauges(all_disk_gauges);
 
         // init Network
+        let nSec_size = getSectionSize(ramandnet_section);
+        let netGaugeSize = findGaugeSize(
+            2,
+            nSec_size[0] - 30,
+            nSec_size[1] / 2 - 100,
+            30
+        );
+
         for (let i = 0; i < 2; i++) {
             net_canvas = document.createElement("canvas");
             net_canvas.id = `netCanvas${i}`;
-            net_canvas.width = "200";
-            net_canvas.height = "200";
-            net_canvas.style.margin = "10px";
+            net_canvas.width = netGaugeSize[0] + 22;
+            net_canvas.height = netGaugeSize[1];
+            net_canvas.style.margin = "2px";
             document.getElementById("network").appendChild(net_canvas);
 
             let opts_net = Object.assign({}, opts_general, {
@@ -248,7 +267,6 @@ ws.onmessage = function (event) {
 
         let opts_net_max = Object.assign({}, opts_general, {
             staticLabels: {
-                font: "18px orbitron",
                 labels: [0, 250, 500, 750, 1000],
                 color: "#000000",
                 fractionDigits: 0,
@@ -321,8 +339,17 @@ function start_gauges(gauges) {
 function createRamCanvas() {
     let ram_canvas = document.createElement("canvas");
     ram_canvas.id = `ramGauge`;
-    ram_canvas.width = "200";
-    ram_canvas.height = "200";
+
+    let rSec_size = getSectionSize(ramandnet_section);
+    let rGaugeSize = findGaugeSize(
+        1,
+        rSec_size[0] - 30,
+        rSec_size[1] / 2 - 120,
+        0
+    );
+
+    ram_canvas.width = rGaugeSize[0];
+    ram_canvas.height = rGaugeSize[1];
     ram_canvas.style.margin = "10px";
     document.getElementById("ram").appendChild(ram_canvas);
     return ram_canvas;
@@ -339,6 +366,9 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
         rows = Math.floor(root);
     }
 
+    let gaugeWidth;
+    let gaugeHeight;
+
     if (conHeight > conWidth) {
         let hold = cols;
         cols = rows;
@@ -352,10 +382,12 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
             conHeight -= 180;
             conWidth -= 30;
         }
+        gaugeWidth = Math.floor(conWidth / cols) - spacing;
+        gaugeHeight = gaugeWidth;
+    } else {
+        gaugeWidth = Math.floor(conWidth / cols) - spacing;
+        gaugeHeight = Math.floor(conHeight / rows) - spacing;
     }
-
-    let gaugeWidth = Math.floor(conWidth / cols) - spacing;
-    let gaugeHeight = Math.floor(conHeight / rows) - spacing;
 
     return [gaugeWidth, gaugeHeight];
 }
