@@ -24,7 +24,16 @@ body {
 
 .thatsAllFolks {
     display: inline;
-    width: 99vw;
+    /* width: 99vw; */
+}
+
+@media only screen and (max-width: 768px) {
+    .thatsAllFolks {
+        /* display: flex;
+        flex-direction: column; */
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 .mainHeaderContainer {
@@ -37,7 +46,6 @@ body {
 }
 
 .container {
-    width: 99vw;
     height: 80vh;
     display: grid;
     align-items: center;
@@ -67,10 +75,6 @@ body {
             "ramandnet"
             "disk";
         height: 100%;
-    }
-
-    .section {
-        max-height: 50vh;
     }
 
     body {
@@ -114,7 +118,7 @@ body {
 
 @media only screen and (max-width: 768px) {
     .section {
-        max-width: 80vw;
+        /* max-width: 80vw; */
         padding: 3px;
     }
 

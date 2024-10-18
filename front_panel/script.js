@@ -12,6 +12,7 @@ let network = document.getElementById("network");
 
 let cpu_section = document.getElementsByClassName("cSec")[0];
 let ramandnet_section = document.getElementsByClassName("ramandnet")[0];
+let disk_section = document.getElementsByClassName("dSec")[0];
 
 function getSectionSize(section) {
     let sec_width = section.offsetWidth;
@@ -145,11 +146,18 @@ ws.onmessage = function (event) {
         start_gauges([ram_gauge]);
 
         // init Disks
+        let dSec_size = getSectionSize(disk_section);
+        let diskGaugeSize = findGaugeSize(
+            data_stream.num_disks,
+            dSec_size[0],
+            dSec_size[1],
+            50
+        );
         for (let i = 0; i < data_stream.num_disks; i++) {
             let disk_canvas = document.createElement("canvas");
             disk_canvas.id = `diskGauge${i}`;
-            disk_canvas.width = "200";
-            disk_canvas.height = "200";
+            disk_canvas.width = diskGaugeSize[0];
+            disk_canvas.height = diskGaugeSize[1];
             disk_canvas.style.margin = "10px";
             document.getElementById("disks").appendChild(disk_canvas);
 
@@ -386,7 +394,12 @@ function findGaugeSize(number, conWidth, conHeight, spacing) {
         gaugeHeight = gaugeWidth;
     } else {
         gaugeWidth = Math.floor(conWidth / cols) - spacing;
-        gaugeHeight = Math.floor(conHeight / rows) - spacing;
+        gaugeHeight = gaugeWidth;
+    }
+
+    if (gaugeWidth > 476) {
+        gaugeWidth = 476;
+        gaugeHeight = 476;
     }
 
     return [gaugeWidth, gaugeHeight];
