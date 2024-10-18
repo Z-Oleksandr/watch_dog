@@ -134,6 +134,10 @@ body {
     justify-content: center;
 }
 
+#network canvas {
+    padding: 5px;
+}
+
 #disks {
     display: flex;
     flex-wrap: wrap;

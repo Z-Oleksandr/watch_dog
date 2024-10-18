@@ -23,7 +23,7 @@ function getSectionSize(section) {
 let opts_general = {
     angle: -0.2,
     lineWidth: 0.15,
-    radiusScale: 0.69,
+    radiusScale: 0.6,
     pointer: {
         length: 0.6,
         strokeWidth: 0.035,
@@ -205,7 +205,7 @@ ws.onmessage = function (event) {
             2,
             nSec_size[0] - 30,
             nSec_size[1] / 2 - 100,
-            30
+            50
         );
 
         for (let i = 0; i < 2; i++) {
