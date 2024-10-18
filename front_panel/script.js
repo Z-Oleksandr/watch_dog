@@ -71,18 +71,25 @@ ws.onmessage = function (event) {
         // init CPU
         let numCPUs = data_stream.num_cpus;
         let cSec_size = getSectionSize(cpu_section);
+        let spacing;
+        if (numCPUs > 6) {
+            spacing = 50;
+        } else {
+            spacing = 100;
+        }
+
         let cpuGaugeSize = findGaugeSize(
             numCPUs,
             cSec_size[0],
             cSec_size[1],
-            50
+            spacing
         );
 
         for (let i = 0; i < data_stream.num_cpus; i++) {
             let canvas = document.createElement("canvas");
             canvas.id = `cpuGauge${i}`;
-            canvas.width = cpuGaugeSize[0] - 20;
-            canvas.height = cpuGaugeSize[1] - 20;
+            canvas.width = cpuGaugeSize[0];
+            canvas.height = cpuGaugeSize[1];
             // canvas.style.margin = "10px";
             document.getElementById("cpu").appendChild(canvas);
 
