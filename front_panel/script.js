@@ -81,8 +81,8 @@ ws.onmessage = function (event) {
         for (let i = 0; i < data_stream.num_cpus; i++) {
             let canvas = document.createElement("canvas");
             canvas.id = `cpuGauge${i}`;
-            canvas.width = cpuGaugeSize[0];
-            canvas.height = cpuGaugeSize[1];
+            canvas.width = cpuGaugeSize[0] - 20;
+            canvas.height = cpuGaugeSize[1] - 20;
             // canvas.style.margin = "10px";
             document.getElementById("cpu").appendChild(canvas);
 
