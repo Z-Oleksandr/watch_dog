@@ -91,6 +91,28 @@ body {
     color: white;
 }
 
+.displayGreetingContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    animation: fadeIn 1s forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.displayGreeting {
+    font-size: xx-large;
+    color: white;
+}
+
 .control1 {
     width: 100%;
     height: 20vh;

@@ -274,25 +274,36 @@ ws.onmessage = function (event) {
     }
 
     if (data_stream.data_type == 2) {
-        let column1 = document.getElementById("column1");
-        let column2 = document.getElementById("column2");
-        function createPandAppend(topic, info, index) {
-            let text = document.createElement("p");
-            text.appendChild(document.createTextNode(topic + ": " + info));
-            if (index < 4) {
-                column1.appendChild(text);
-            } else {
-                column2.appendChild(text);
-            }
-        }
+        let display = document.getElementsByClassName("display")[0];
+        initDisplay(display);
+        setTimeout(() => {
+            let column1 = document.createElement("div");
+            let column2 = document.createElement("div");
+            column1.classList.add("column");
+            column2.classList.add("column");
+            column2.setAttribute("id", "column2");
 
-        Object.entries(data_stream).forEach(([key, value], index) => {
-            if (key == "data_type") {
-                return;
-            } else {
-                createPandAppend(key, value, index);
+            function createPandAppend(topic, info, index) {
+                let text = document.createElement("p");
+                text.appendChild(document.createTextNode(topic + ": " + info));
+                if (index < 4) {
+                    column1.appendChild(text);
+                } else {
+                    column2.appendChild(text);
+                }
             }
-        });
+
+            Object.entries(data_stream).forEach(([key, value], index) => {
+                if (key == "data_type") {
+                    return;
+                } else {
+                    createPandAppend(key, value, index);
+                }
+            });
+
+            display.appendChild(column1);
+            display.appendChild(column2);
+        }, 5000);
     }
 
     if (data_stream.data_type == 1) {
@@ -493,4 +504,17 @@ function updateUptime(value) {
             p.textContent = "uptime: " + value;
         }
     }
+}
+
+function initDisplay(display) {
+    const greeting_container = document.createElement("div");
+    greeting_container.classList.add("displayGreetingContainer");
+    const greeting = document.createElement("p");
+    greeting.classList.add("displayGreeting");
+    greeting.textContent = "watch_dog - system monitor";
+    greeting_container.appendChild(greeting);
+    display.appendChild(greeting_container);
+    setTimeout(() => {
+        display.removeChild(greeting_container);
+    }, 4000);
 }
