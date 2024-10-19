@@ -273,6 +273,28 @@ ws.onmessage = function (event) {
         start_gauges(all_disk_gauges);
     }
 
+    if (data_stream.data_type == 2) {
+        let column1 = document.getElementById("column1");
+        let column2 = document.getElementById("column2");
+        function createPandAppend(topic, info, index) {
+            let text = document.createElement("p");
+            text.appendChild(document.createTextNode(topic + ": " + info));
+            if (index < 4) {
+                column1.appendChild(text);
+            } else {
+                column2.appendChild(text);
+            }
+        }
+
+        Object.entries(data_stream).forEach(([key, value], index) => {
+            if (key == "data_type") {
+                return;
+            } else {
+                createPandAppend(key, value, index);
+            }
+        });
+    }
+
     if (data_stream.data_type == 1) {
         // CPU
         let per_cluster = numCPUs / 4;
@@ -350,6 +372,9 @@ ws.onmessage = function (event) {
         }
         all_net_gauges[0].set(net_received / 1000);
         all_net_gauges[1].set(net_transmitted / 1000);
+
+        // Updating uptime
+        updateUptime(data_stream.uptime);
     }
 };
 
@@ -458,4 +483,14 @@ function findGaugeSizeQuadro(number, conWidth, conHeight, spacing) {
     }
 
     return [gaugeWidth, gaugeHeight];
+}
+
+function updateUptime(value) {
+    const location = document.getElementById("column2");
+    const p_items = location.querySelectorAll("p");
+    for (const p of p_items) {
+        if (p.textContent.includes("uptime")) {
+            p.textContent = "uptime: " + value;
+        }
+    }
 }

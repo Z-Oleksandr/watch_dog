@@ -17,6 +17,7 @@ struct SystemStats {
     disks_used_space: Vec<u64>,
     network_received: u64,
     network_transmitted: u64,
+    uptime: u64,
 }
 
 #[derive(Serialize)]
@@ -119,13 +120,6 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     loop {
         sys.refresh_all();
 
-        let components = Components::new_with_refreshed_list();
-        println!("Components {:#?}", components);
-        for component in &components {
-            println!("Printing components:");
-            println!("{} {}°C", component.label(), component.temperature());
-        }
-
         // CPU data
         let cpu_usage = sys.cpus()
             .iter()
@@ -166,6 +160,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             // println!("Transmit: {}", data.transmitted());
         }
 
+        let uptime = System::uptime();
+
         let stats = SystemStats {
             data_type: 1,
             cpu_usage,
@@ -174,6 +170,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             disks_used_space,
             network_received,
             network_transmitted,
+            uptime,
         };
 
         // Serialize stats to JSON
