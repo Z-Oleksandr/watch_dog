@@ -444,10 +444,12 @@ function findGaugeSizeByHeight(number, conWidth, conHeight, spacing) {
     let gaugeHeight = Math.floor(conHeight / number) - spacing;
     let gaugeWidth = gaugeHeight;
 
-    if (gaugeWidth > 476) {
-        gaugeWidth = 476;
-        gaugeHeight = 476;
+    console.log("Before: " + gaugeWidth);
+    if (gaugeWidth > 300) {
+        gaugeWidth = 300;
+        gaugeHeight = 300;
     }
+    console.log("After: " + gaugeWidth);
 
     return [gaugeWidth, gaugeHeight];
 }
