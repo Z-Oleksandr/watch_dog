@@ -1,5 +1,5 @@
-use std::{collections::{HashMap, HashSet}, net::SocketAddr, time::Duration};
-use sysinfo::{Networks, System, Components, Disks};
+use std::{collections:: HashSet, net::{IpAddr, SocketAddr}, time::Duration};
+use sysinfo::{Components, Disks, Networks, System};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use serde::Serialize;
@@ -26,6 +26,17 @@ struct SystemData {
     num_disks: u32,
     disks_space: Vec<u64>,
     init_ram_total: u64,
+}
+
+#[derive(Serialize)]
+struct SystemInfo {
+    data_type: u32,
+    system_name: String,
+    kernel_version: String,
+    cpu_arch: String,
+    os_version: String,
+    host_name: String,
+    uptime: u64,
 }
 
 async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
@@ -71,10 +82,49 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     write.send(Message::Text(system_data_json))
         .await.expect("Error sending static data");
 
+    // Prepare SystemInfo
+    let system_name = System::name()
+        .unwrap_or("System name not found".to_string());
+
+    let kernel_version = System::kernel_version()
+        .unwrap_or("Kernel version not available".to_string());
+
+    let cpu_arch = System::cpu_arch()
+        .unwrap_or("cpu_arch not found".to_string());
+
+    let os_version = System::os_version()
+        .unwrap_or("x.x.x".to_string());
+
+    let host_name = System::host_name()
+        .unwrap_or("Host name not found".to_string());
+
+    let uptime = System::uptime();
+
+    let system_info = SystemInfo {
+        data_type: 2,
+        system_name,
+        kernel_version,
+        cpu_arch,
+        os_version,
+        host_name,
+        uptime
+    };
+
+    let system_info_json = serde_json::to_string(&system_info).unwrap();
+    write.send(Message::Text(system_info_json))
+        .await.expect("Error sending system info");
+
     time::sleep(Duration::from_secs(5)).await;
 
     loop {
         sys.refresh_all();
+
+        let components = Components::new_with_refreshed_list();
+        println!("Components {:#?}", components);
+        for component in &components {
+            println!("Printing components:");
+            println!("{} {}°C", component.label(), component.temperature());
+        }
 
         // CPU data
         let cpu_usage = sys.cpus()
@@ -140,7 +190,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() { 
     // let addr = "127.0.0.1:8999";
     let addr = "0.0.0.0:8999";
     let listener = TcpListener::bind(&addr).await.expect("Failed to build");
