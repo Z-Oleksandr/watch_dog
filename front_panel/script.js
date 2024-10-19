@@ -58,9 +58,13 @@ let opts_general = {
 };
 
 let all_cpu_gauges = [];
+let cpu_clusters = new Array(4);
+
 let all_disk_gauges = [];
 let all_net_gauges = [];
 let ram_gauge;
+
+let numCPUs;
 
 let net_canvas;
 
@@ -69,29 +73,32 @@ ws.onmessage = function (event) {
 
     if (data_stream.data_type == 0) {
         // init CPU
-        let numCPUs = data_stream.num_cpus;
+        numCPUs = data_stream.num_cpus;
         let cSec_size = getSectionSize(cpu_section);
-        let spacing;
-        if (numCPUs > 6) {
-            spacing = 50;
-        } else {
-            spacing = 100;
-        }
+        let cpu_container = document.getElementById("cpu");
 
-        let cpuGaugeSize = findGaugeSize(
-            numCPUs,
+        let cpuGaugeSize = findGaugeSizeByHeight(
+            4, // Split cpu threads into 4 clusters
             cSec_size[0],
             cSec_size[1],
-            spacing
+            30
         );
 
-        for (let i = 0; i < data_stream.num_cpus; i++) {
+        for (let i = 0; i < 4; i++) {
+            // Create label for each cluster
+            let label = document.createElement("p");
+            label.classList.add("gTitle");
+            label.classList.add("cTitle");
+            label.appendChild(document.createTextNode(`CPU cluster ${i}`));
+            // Create the gauge
             let canvas = document.createElement("canvas");
             canvas.id = `cpuGauge${i}`;
+
             canvas.width = cpuGaugeSize[0];
             canvas.height = cpuGaugeSize[1];
-            // canvas.style.margin = "10px";
-            document.getElementById("cpu").appendChild(canvas);
+
+            cpu_container.appendChild(label);
+            cpu_container.appendChild(canvas);
 
             let cpu_gauge = new Gauge(canvas).setOptions(opts_general);
             cpu_gauge.maxValue = 100;
@@ -154,7 +161,7 @@ ws.onmessage = function (event) {
 
         // init Disks
         let dSec_size = getSectionSize(disk_section);
-        let diskGaugeSize = findGaugeSize(
+        let diskGaugeSize = findGaugeSizeByHeight(
             data_stream.num_disks,
             dSec_size[0],
             dSec_size[1],
@@ -216,17 +223,17 @@ ws.onmessage = function (event) {
 
         // init Network
         let nSec_size = getSectionSize(ramandnet_section);
-        let netGaugeSize = findGaugeSize(
-            2,
-            nSec_size[0] - 30,
-            nSec_size[1] / 2 - 100,
+        let netGaugeSize = findGaugeSizeByWidth(
+            3,
+            nSec_size[0],
+            nSec_size[1],
             50
         );
 
         for (let i = 0; i < 2; i++) {
             net_canvas = document.createElement("canvas");
             net_canvas.id = `netCanvas${i}`;
-            net_canvas.width = netGaugeSize[0] + 22;
+            net_canvas.width = netGaugeSize[0];
             net_canvas.height = netGaugeSize[1];
             net_canvas.style.margin = "2px";
             document.getElementById("network").appendChild(net_canvas);
@@ -259,11 +266,28 @@ ws.onmessage = function (event) {
 
     if (data_stream.data_type == 1) {
         // CPU
-        data_stream.cpu_usage.forEach((usage, index) => {
-            if (all_cpu_gauges[index]) {
-                all_cpu_gauges[index].set(usage);
+        let per_cluster = numCPUs / 4;
+        let cpu_usage_array = data_stream.cpu_usage;
+
+        // Old setting for each thread
+        // data_stream.cpu_usage.forEach((usage, index) => {
+        //     if (all_cpu_gauges[index]) {
+        //         all_cpu_gauges[index].set(usage);
+        //     }
+        // });
+
+        let i = 0;
+        let cluster_index = 0;
+        while (i < cpu_usage_array.length) {
+            let cluster_sum = 0;
+            for (let j = i; j < i + per_cluster; j++) {
+                cluster_sum += cpu_usage_array[j];
             }
-        });
+            let cluster_average = cluster_sum / per_cluster;
+            all_cpu_gauges[cluster_index].set(cluster_average);
+            cluster_index += 1;
+            i += per_cluster;
+        }
 
         // RAM
         ram_gauge.set(data_stream.ram_used);
@@ -356,21 +380,37 @@ function createRamCanvas() {
     ram_canvas.id = `ramGauge`;
 
     let rSec_size = getSectionSize(ramandnet_section);
-    let rGaugeSize = findGaugeSize(
-        1,
-        rSec_size[0] - 30,
-        rSec_size[1] / 2 - 120,
-        0
-    );
+    let rGaugeSize = findGaugeSizeByWidth(3, rSec_size[0], rSec_size[1], 50);
 
     ram_canvas.width = rGaugeSize[0];
     ram_canvas.height = rGaugeSize[1];
     ram_canvas.style.margin = "10px";
+
+    let label = document.createElement("p");
+    label.classList.add("gTitle");
+    label.appendChild(document.createTextNode("RAM"));
+    document.getElementById("ram").appendChild(label);
     document.getElementById("ram").appendChild(ram_canvas);
     return ram_canvas;
 }
 
-function findGaugeSize(number, conWidth, conHeight, spacing) {
+function findGaugeSizeByHeight(number, conWidth, conHeight, spacing) {
+    let gaugeHeight = Math.floor(conHeight / number) - spacing;
+    let gaugeWidth = gaugeHeight;
+
+    if (gaugeWidth > 476) {
+        gaugeWidth = 476;
+        gaugeHeight = 476;
+    }
+
+    return [gaugeWidth, gaugeHeight];
+}
+
+function findGaugeSizeByWidth(number, conWidth, conHeight, spacing) {
+    return findGaugeSizeByHeight(number, conHeight, conWidth, spacing);
+}
+
+function findGaugeSizeQuadro(number, conWidth, conHeight, spacing) {
     let cols, rows;
     let root = Math.sqrt(number);
     if (Number.isInteger(root)) {
