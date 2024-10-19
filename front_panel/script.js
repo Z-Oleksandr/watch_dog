@@ -510,10 +510,14 @@ function updateUptime(value) {
 
 function formatSecondsToTime(seconds_input) {
     const dateObj = new Date(seconds_input * 1000);
+    let days = dateObj.getUTCDay();
     let hours = dateObj.getUTCHours();
     let minutes = dateObj.getUTCMinutes();
     let seconds = dateObj.getUTCSeconds();
     let timeString =
+        "Days: " +
+        days.toString() +
+        " Hours: " +
         hours.toString().padStart(2, "0") +
         ":" +
         minutes.toString().padStart(2, "0") +
