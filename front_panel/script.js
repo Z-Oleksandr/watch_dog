@@ -296,6 +296,8 @@ ws.onmessage = function (event) {
             Object.entries(data_stream).forEach(([key, value], index) => {
                 if (key == "data_type") {
                     return;
+                } else if (key == "uptime") {
+                    createPandAppend(key, formatSecondsToTime(value), index);
                 } else {
                     createPandAppend(key, value, index);
                 }
@@ -501,9 +503,23 @@ function updateUptime(value) {
     const p_items = location.querySelectorAll("p");
     for (const p of p_items) {
         if (p.textContent.includes("uptime")) {
-            p.textContent = "uptime: " + value;
+            p.textContent = "uptime: " + formatSecondsToTime(value);
         }
     }
+}
+
+function formatSecondsToTime(seconds_input) {
+    const dateObj = new Date(seconds_input * 1000);
+    let hours = dateObj.getUTCHours();
+    let minutes = dateObj.getUTCMinutes();
+    let seconds = dateObj.getUTCSeconds();
+    let timeString =
+        hours.toString().padStart(2, "0") +
+        ":" +
+        minutes.toString().padStart(2, "0") +
+        ":" +
+        seconds.toString().padStart(2, "0");
+    return timeString;
 }
 
 function initDisplay(display) {
