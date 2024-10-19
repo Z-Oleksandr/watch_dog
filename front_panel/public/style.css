@@ -98,7 +98,8 @@ body {
 
 .nTitle {
     position: relative;
-    left: -11px;
+    bottom: 16vh;
+    left: 1vw;
 }
 
 #network {

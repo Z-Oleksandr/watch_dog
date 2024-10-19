@@ -159,6 +159,57 @@ ws.onmessage = function (event) {
 
         start_gauges([ram_gauge]);
 
+        // init Network
+        let nSec_size = getSectionSize(ramandnet_section);
+        let netGaugeSize = findGaugeSizeByWidth(
+            3,
+            nSec_size[0],
+            nSec_size[1],
+            50
+        );
+
+        for (let i = 0; i < 2; i++) {
+            let label = document.createElement("p");
+            label.classList.add("gTitle");
+            label.classList.add("nTitle");
+            if (i == 0) {
+                label.appendChild(document.createTextNode("Down"));
+            } else {
+                label.appendChild(document.createTextNode("Up"));
+            }
+            document.getElementById("network").appendChild(label);
+
+            net_canvas = document.createElement("canvas");
+            net_canvas.id = `netCanvas${i}`;
+            net_canvas.width = netGaugeSize[0] - 10;
+            net_canvas.height = netGaugeSize[1] - 10;
+            document.getElementById("network").appendChild(net_canvas);
+
+            let opts_net = Object.assign({}, opts_general, {
+                staticLabels: {
+                    font: "18px orbitron",
+                    labels: [0, 125, 250, 375, 500],
+                    color: "#000000",
+                    fractionDigits: 0,
+                },
+                staticZones: [
+                    {
+                        strokeStyle: "#30B32D",
+                        min: 0,
+                        max: 500,
+                    }, // Green
+                ],
+            });
+
+            let net_gauge = new Gauge(net_canvas).setOptions(opts_net);
+            net_gauge.maxValue = 500; // Mbps
+            net_gauge.setMinValue(0);
+            net_gauge.animationSpeed = 500;
+
+            all_net_gauges.push(net_gauge);
+        }
+        start_gauges(all_net_gauges);
+
         // init Disks
         let dSec_size = getSectionSize(disk_section);
         let diskGaugeSize = findGaugeSizeByHeight(
@@ -220,48 +271,6 @@ ws.onmessage = function (event) {
             all_disk_gauges.push(disk_gauge);
         }
         start_gauges(all_disk_gauges);
-
-        // init Network
-        let nSec_size = getSectionSize(ramandnet_section);
-        let netGaugeSize = findGaugeSizeByWidth(
-            3,
-            nSec_size[0],
-            nSec_size[1],
-            50
-        );
-
-        for (let i = 0; i < 2; i++) {
-            net_canvas = document.createElement("canvas");
-            net_canvas.id = `netCanvas${i}`;
-            net_canvas.width = netGaugeSize[0];
-            net_canvas.height = netGaugeSize[1];
-            net_canvas.style.margin = "2px";
-            document.getElementById("network").appendChild(net_canvas);
-
-            let opts_net = Object.assign({}, opts_general, {
-                staticLabels: {
-                    font: "18px orbitron",
-                    labels: [0, 125, 250, 375, 500],
-                    color: "#000000",
-                    fractionDigits: 0,
-                },
-                staticZones: [
-                    {
-                        strokeStyle: "#30B32D",
-                        min: 0,
-                        max: 500,
-                    }, // Green
-                ],
-            });
-
-            let net_gauge = new Gauge(net_canvas).setOptions(opts_net);
-            net_gauge.maxValue = 500; // Mbps
-            net_gauge.setMinValue(0);
-            net_gauge.animationSpeed = 500;
-
-            all_net_gauges.push(net_gauge);
-        }
-        start_gauges(all_net_gauges);
     }
 
     if (data_stream.data_type == 1) {
@@ -384,7 +393,6 @@ function createRamCanvas() {
 
     ram_canvas.width = rGaugeSize[0];
     ram_canvas.height = rGaugeSize[1];
-    ram_canvas.style.margin = "10px";
 
     let label = document.createElement("p");
     label.classList.add("gTitle");
