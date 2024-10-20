@@ -128,7 +128,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
         // RAM data
         let ram_total = sys.total_memory() / 1000000000;
-        let ram_used = sys.used_memory() / 1000000000;
+        let ram_used = sys.used_memory() / 1000000; // In MB
 
         // Disk data
         let disks = Disks::new_with_refreshed_list();

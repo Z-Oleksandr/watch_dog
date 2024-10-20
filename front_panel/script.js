@@ -334,7 +334,8 @@ ws.onmessage = function (event) {
         }
 
         // RAM
-        ram_gauge.set(data_stream.ram_used);
+        let ram_value = data_stream.ram_used / 1000;
+        ram_gauge.set(ram_value);
 
         // Disks
         data_stream.disks_used_space.forEach((u_s, i) => {
