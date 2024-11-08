@@ -516,14 +516,14 @@ function formatSecondsToTime(seconds_input) {
     let minutes = dateObj.getUTCMinutes();
     let seconds = dateObj.getUTCSeconds();
     let timeString =
-        "Days: " +
         days.toString() +
-        " Hours: " +
+        " days, " +
         hours.toString().padStart(2, "0") +
         ":" +
         minutes.toString().padStart(2, "0") +
         ":" +
-        seconds.toString().padStart(2, "0");
+        seconds.toString().padStart(2, "0") +
+        " hours.";
     return timeString;
 }
 
