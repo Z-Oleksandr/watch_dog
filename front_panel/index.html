@@ -5,7 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>System_Monitor</title>
         <script src="gauge.min.js"></script>
-        <link rel="stylesheet" href="public/style.css" />
+        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="control_window_style.css" />
         <link
             rel="shortcut icon"
             href="public/favicon.png"
@@ -39,8 +40,12 @@
                         </tr>
                         <tr class="controls centerSec">
                             <td>
-                                <div class="control1"></div>
-                                <div class="control2"></div>
+                                <div class="control1">
+                                    <canvas id="control1"></canvas>
+                                </div>
+                                <div class="control2">
+                                    <canvas id="control2"></canvas>
+                                </div>
                             </td>
                         </tr>
                     </table>
@@ -54,5 +59,6 @@
             </div>
         </div>
         <script src="script.js"></script>
+        <script type="module" src="/main.js"></script>
     </body>
 </html>

@@ -14,6 +14,9 @@ app.use(
     })
 );
 
+app.use(express.static("dist"));
+app.use(express.static("public"));
+
 app.get("/", function (req, res) {
     res.sendFile(path.join(__dirname, "index.html"));
 });
