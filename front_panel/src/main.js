@@ -63,7 +63,7 @@ async function loadToggleModels() {
         (_, i) =>
             new Promise((resolve, reject) => {
                 loader.load(
-                    "models/switch/switch4.gltf",
+                    "models/switch/switch1.gltf",
                     (gltf) => {
                         const model = gltf.scene;
                         model.rotation.set(-0.2, 1.569, 0);
@@ -134,6 +134,7 @@ async function loadButtons() {
                             action.loop = THREE.LoopOnce;
                             action.clampWhenFinished = true;
 
+                            action.timeScale = 4.2;
                             action.play();
                             action.time = 0;
                             action.paused = true;
