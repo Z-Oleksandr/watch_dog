@@ -7,6 +7,7 @@
 :root {
     --border-style: 2px solid black;
     --border-radius: 5px;
+    --ramandnet-midscreen: 12vh;
 }
 
 body {
@@ -172,19 +173,116 @@ body {
         align-items: center;
     }
 
+    .cSec {
+        height: 30vh;
+    }
+
     #cpu {
         display: flex;
-        flex-direction: row;
-        padding: 5px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
     #cpu canvas {
-        width: 10vh;
-        height: 10vh;
+        width: 15vh;
+        height: 15vh;
+        padding-right: 20px;
+    }
+
+    #cpu p {
+        padding-left: 20px;
     }
 
     .center {
-        border: none;
+        min-height: 45vh;
+    }
+
+    .centerTable {
+        width: 90%;
+    }
+
+    .ramandnet {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        height: 10vh;
+        padding: 6.9px;
+    }
+
+    #ram {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #ram canvas {
+        width: var(--ramandnet-midscreen);
+        height: var(--ramandnet-midscreen);
+    }
+
+    #network {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #network canvas {
+        width: var(--ramandnet-midscreen);
+        height: var(--ramandnet-midscreen);
+    }
+
+    .display {
+        width: 100%;
+        height: 10vh;
+        border: 3px double black;
+        display: flex;
+        flex-wrap: wrap;
+        background-color: #3a3a3d;
+        opacity: 0.8;
+    }
+
+    .column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        max-width: 50%;
+        padding: 4px;
+        color: white;
+    }
+
+    .displayGreetingContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        animation: fadeIn 1s forwards;
+    }
+
+    .displayGreeting {
+        font-size: xx-large;
+        color: white;
+    }
+
+    .control1 {
+        width: 100%;
+        height: 10vh;
+        border: 3px double black;
+    }
+
+    .control2 {
+        width: 100%;
+        height: 10vh;
+        border: 3px double black;
+    }
+
+    .gTitle {
+        font-weight: 600;
+        font-size: small;
+        margin-bottom: -5vh;
+    }
+
+    .dSec {
+        height: 20vh;
     }
 }
 

@@ -212,12 +212,24 @@ ws.onmessage = function (event) {
 
         // init Disks
         let dSec_size = getSectionSize(disk_section);
-        let diskGaugeSize = findGaugeSizeByHeight(
-            data_stream.num_disks,
-            dSec_size[0],
-            dSec_size[1],
-            50
-        );
+        let diskGaugeSize;
+        if (window.innerWidth < 1100) {
+            diskGaugeSize = findGaugeSizeByWidth(
+                data_stream.num_disks,
+                dSec_size[0],
+                dSec_size[1],
+                50
+            );
+        } else {
+            diskGaugeSize = findGaugeSizeByHeight(
+                data_stream.num_disks,
+                dSec_size[0],
+                dSec_size[1],
+                50
+            );
+        }
+        console.log("Sec Size: " + dSec_size);
+        console.log("Gauge Size: " + diskGaugeSize);
         for (let i = 0; i < data_stream.num_disks; i++) {
             let disk_canvas = document.createElement("canvas");
             disk_canvas.id = `diskGauge${i}`;
