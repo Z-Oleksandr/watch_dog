@@ -77,22 +77,22 @@ ws.onmessage = function (event) {
         let cSec_size = getSectionSize(cpu_section);
         let cpu_container = document.getElementById("cpu");
 
-        let cpuGaugeSize = findGaugeSizeByHeight(
-            4, // Split cpu threads into 4 clusters
-            cSec_size[0],
-            cSec_size[1],
-            30
-        );
+        if (window.innerWidth < 768) {
+            let cpuGaugeSize = findGaugeSizeByHeight(
+                1, // Split cpu threads into 1 cluster
+                cSec_size[0],
+                cSec_size[1],
+                30
+            );
 
-        for (let i = 0; i < 4; i++) {
             // Create label for each cluster
             let label = document.createElement("p");
             label.classList.add("gTitle");
             label.classList.add("cTitle");
-            label.appendChild(document.createTextNode(`CPU cluster ${i}`));
+            label.appendChild(document.createTextNode(`CPU cluster 0`));
             // Create the gauge
             let canvas = document.createElement("canvas");
-            canvas.id = `cpuGauge${i}`;
+            canvas.id = `cpuGauge0`;
 
             canvas.width = cpuGaugeSize[0];
             canvas.height = cpuGaugeSize[1];
@@ -106,6 +106,37 @@ ws.onmessage = function (event) {
             cpu_gauge.animationSpeed = 500;
 
             all_cpu_gauges.push(cpu_gauge);
+        } else {
+            let cpuGaugeSize = findGaugeSizeByHeight(
+                4, // Split cpu threads into 4 clusters
+                cSec_size[0],
+                cSec_size[1],
+                30
+            );
+
+            for (let i = 0; i < 4; i++) {
+                // Create label for each cluster
+                let label = document.createElement("p");
+                label.classList.add("gTitle");
+                label.classList.add("cTitle");
+                label.appendChild(document.createTextNode(`CPU cluster ${i}`));
+                // Create the gauge
+                let canvas = document.createElement("canvas");
+                canvas.id = `cpuGauge${i}`;
+
+                canvas.width = cpuGaugeSize[0];
+                canvas.height = cpuGaugeSize[1];
+
+                cpu_container.appendChild(label);
+                cpu_container.appendChild(canvas);
+
+                let cpu_gauge = new Gauge(canvas).setOptions(opts_general);
+                cpu_gauge.maxValue = 100;
+                cpu_gauge.setMinValue(0);
+                cpu_gauge.animationSpeed = 500;
+
+                all_cpu_gauges.push(cpu_gauge);
+            }
         }
         start_gauges(all_cpu_gauges);
 
@@ -185,21 +216,40 @@ ws.onmessage = function (event) {
             net_canvas.height = netGaugeSize[1] - 10;
             document.getElementById("network").appendChild(net_canvas);
 
-            let opts_net = Object.assign({}, opts_general, {
-                staticLabels: {
-                    font: "18px orbitron",
-                    labels: [0, 125, 250, 375, 500],
-                    color: "#000000",
-                    fractionDigits: 0,
-                },
-                staticZones: [
-                    {
-                        strokeStyle: "#30B32D",
-                        min: 0,
-                        max: 500,
-                    }, // Green
-                ],
-            });
+            let opts_net;
+            if (window.innerWidth < 768) {
+                opts_net = Object.assign({}, opts_general, {
+                    staticLabels: {
+                        font: "9px orbitron",
+                        labels: [0, 125, 250, 375, 500],
+                        color: "#000000",
+                        fractionDigits: 0,
+                    },
+                    staticZones: [
+                        {
+                            strokeStyle: "#30B32D",
+                            min: 0,
+                            max: 500,
+                        }, // Green
+                    ],
+                });
+            } else {
+                opts_net = Object.assign({}, opts_general, {
+                    staticLabels: {
+                        font: "18px orbitron",
+                        labels: [0, 125, 250, 375, 500],
+                        color: "#000000",
+                        fractionDigits: 0,
+                    },
+                    staticZones: [
+                        {
+                            strokeStyle: "#30B32D",
+                            min: 0,
+                            max: 500,
+                        }, // Green
+                    ],
+                });
+            }
 
             let net_gauge = new Gauge(net_canvas).setOptions(opts_net);
             net_gauge.maxValue = 500; // Mbps
@@ -237,6 +287,9 @@ ws.onmessage = function (event) {
             disk_canvas.height = diskGaugeSize[1];
             disk_canvas.style.margin = "10px";
             document.getElementById("disks").appendChild(disk_canvas);
+
+            let dFontSize = 36 / data_stream.num_disks;
+            dFontSize = dFontSize <= 18 ? dFontSize : 18;
 
             let otps_disk = Object.assign({}, opts_general, {
                 staticLabels: {
@@ -285,6 +338,7 @@ ws.onmessage = function (event) {
         start_gauges(all_disk_gauges);
     }
 
+    // Display
     if (data_stream.data_type == 2) {
         let display = document.getElementsByClassName("display")[0];
         initDisplay(display);
@@ -322,7 +376,8 @@ ws.onmessage = function (event) {
 
     if (data_stream.data_type == 1) {
         // CPU
-        let per_cluster = numCPUs / 4;
+        let splitter = window.innerWidth < 768 ? 1 : 4;
+        let per_cluster = numCPUs / splitter;
         let cpu_usage_array = data_stream.cpu_usage;
 
         // Old setting for each thread

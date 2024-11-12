@@ -287,6 +287,191 @@ body {
 }
 
 @media only screen and (max-width: 768px) {
+    .container {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        display: grid;
+        align-items: center;
+        grid-template-rows: 1fr 3fr 1fr;
+        grid-template-columns: auto;
+        grid-template-areas: "top" "center" "bottom";
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .section {
+        border: var(--border-style);
+        border-radius: var(--border-radius);
+        /* padding: 5px; */
+        margin: 5px;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .cSec {
+        height: 25vh;
+    }
+
+    #cpu {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    #cpu canvas {
+        width: 21vh;
+        height: 21vh;
+        padding-right: 20px;
+    }
+
+    #cpu p {
+        position: absolute;
+        left: 0px;
+        top: 3vh;
+        padding-left: 20px;
+    }
+
+    .center {
+        min-height: 45vh;
+    }
+
+    .centerTable {
+        width: 90%;
+    }
+
+    .ramandnet {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        height: 10vh;
+        padding: 6.9px;
+    }
+
+    .ramandnet {
+        min-height: 12vh;
+    }
+
+    #ram {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #ram canvas {
+        width: var(--ramandnet-midscreen);
+        height: var(--ramandnet-midscreen);
+    }
+
+    #ram p {
+        font-size: 10px !important;
+        padding-left: 5px;
+    }
+
+    #network p {
+        font-size: 10px !important;
+    }
+
+    #network {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #network canvas {
+        width: var(--ramandnet-midscreen);
+        height: var(--ramandnet-midscreen);
+    }
+
+    .centerSec {
+        box-sizing: border-box;
+        overflow: hidden;
+        align-items: center;
+    }
+
+    .centerSquares {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info {
+        padding-top: 15px;
+    }
+
+    .display {
+        width: 93vw;
+        max-width: 93vw;
+        height: 10vh;
+        border: 3px double black;
+        display: flex;
+        flex-wrap: wrap;
+        background-color: #3a3a3d;
+        opacity: 0.8;
+        overflow: hidden;
+    }
+
+    .column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        max-width: 50%;
+        color: white;
+    }
+
+    .column p {
+        font-size: 10px;
+        padding: 5px;
+        margin: 0px;
+    }
+
+    .displayGreetingContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        animation: fadeIn 1s forwards;
+    }
+
+    .displayGreeting {
+        font-size: large;
+        color: white;
+    }
+
+    .control1 {
+        width: 93vw;
+        max-width: 93vw;
+        height: 10vh;
+        border: 3px double black;
+        overflow: hidden;
+    }
+
+    .control2 {
+        width: 93vw;
+        max-width: 93vw;
+        height: 10vh;
+        border: 3px double black;
+        overflow: hidden;
+    }
+
+    .gTitle {
+        font-weight: 600;
+        font-size: small;
+        margin-bottom: -5vh;
+    }
+
+    .diskSubSection p {
+        position: absolute;
+        bottom: 23vh;
+        left: 5vw;
+    }
+
+    .dSec {
+        height: 20vh;
+    }
 }
 
 @keyframes fadeIn {
