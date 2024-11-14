@@ -25,8 +25,9 @@ if (isMobile() && window.innerWidth < 1080) {
 renderer.setAnimationLoop(animate);
 
 window.addEventListener("pointermove", onPointerMove);
+window.addEventListener("touchmove", onPointerMoveMobile);
 window.addEventListener("click", handleClick);
-window.addEventListener("touchstart", onTouch);
+window.addEventListener("touchend", handleClick);
 
 // const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -188,13 +189,12 @@ function onPointerMove(event) {
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
-function onTouch(event) {
+function onPointerMoveMobile(event) {
     const rect = renderer.domElement.getBoundingClientRect();
-    const x = event.touches ? event.touches[0].clientX : event.clientX;
-    const y = event.touches ? event.touches[0].clientY : event.clientY;
+    const touch = event.touches ? event.touches[0] : event;
 
-    pointer.x = ((x - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((y - rect.top) / rect.height) * 2 + 1;
+    pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
 function handleClick(event) {
