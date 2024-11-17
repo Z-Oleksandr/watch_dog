@@ -1,9 +1,17 @@
+import { animateEmission } from "./indicator";
+
 export class ToggleSwitch {
     constructor(model, action, mixer, state) {
         this.model = model;
         this.action = action;
         this.mixer = mixer;
         this.state = state;
+        this.doing = null;
+    }
+
+    addDoing(callback) {
+        console.log("Callback: " + callback);
+        this.doing = callback;
     }
 
     toggle() {
@@ -13,6 +21,7 @@ export class ToggleSwitch {
             this.action.paused = false;
             this.action.play();
         }
+        this.doing();
     }
 }
 

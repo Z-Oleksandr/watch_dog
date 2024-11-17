@@ -92,7 +92,9 @@ class Display2 {
     }
 
     init_message() {
-        this.write_line("Display 2 initialized.");
+        setTimeout(() => {
+            this.write_line("Display 2 initialized.");
+        }, 5500);
     }
 
     write_line(text) {

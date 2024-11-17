@@ -11,6 +11,7 @@ import {
 import { addButton3D, updateButton3DMixers, buttons } from "./button";
 import { init, getScale, isMobile } from "./init";
 import { Label } from "./label";
+import { Indicator, indicators, updateIndiMixers } from "./indicator";
 
 const control2_window = document.getElementsByClassName("control2")[0];
 
@@ -200,15 +201,57 @@ async function loadButtons() {
     }
 }
 
-loadToggleModels().then(() => {
+async function loadIndicators() {
+    const modelPromises = Array.from(
+        { length: 3 },
+        (_, i) =>
+            new Promise((resolve, reject) => {
+                let model_to_load;
+                if (i < 2) {
+                    model_to_load = "models/indicators/indicator2.gltf";
+                } else {
+                    model_to_load = "models/indicators/indicator2_red.gltf";
+                }
+                loader.load(model_to_load, (gltf) => {
+                    const model = gltf.scene;
+                    model.rotation.set(1.069, 0, 0);
+                    model.position.set(0, 2.69 * scale - i * 3 * scale, 0);
+                    const specific_scale = scale * 0.69;
+                    model.scale.set(
+                        specific_scale,
+                        specific_scale,
+                        specific_scale
+                    );
+                    gltf.animations;
+                    scene.add(model);
+
+                    const mixer = new THREE.AnimationMixer(model);
+
+                    const indicator = new Indicator(model, mixer);
+                    indicators.push(indicator);
+                });
+            })
+    );
+}
+
+loadToggleModels();
+
+loadButtons();
+
+loadIndicators().then(() => {
     console.log("Let's gooooo: ");
-    toggle_switches.forEach((e) => {
+    indicators.forEach((e) => {
         console.log(e);
     });
 });
 
-loadButtons();
-
+setTimeout(() => {
+    toggle_switches.forEach((t_switch, i) => {
+        t_switch.addDoing(() => {
+            indicators[i].indi_toggle();
+        });
+    });
+}, 5000);
 // const light = new THREE.AmbientLight(0x404040, 100);
 
 // const light = new THREE.PointLight(0xff0000, 10, 100);
@@ -288,9 +331,16 @@ function render(delta) {
 
     updateToggleMixers(delta);
     updateButton3DMixers(delta);
+    updateIndiMixers(delta);
 
     renderer.render(scene, camera);
 }
 
 // Set the action to the last frame
 // clickedToggleSwitch.action.time = clickedToggleSwitch.action.getClip().duration;
+
+const cover = document.getElementsByClassName("cover")[0];
+
+setTimeout(() => {
+    cover.style.transform = "translateY(-100%)";
+}, 5000);
