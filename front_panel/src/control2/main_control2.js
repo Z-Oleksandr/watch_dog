@@ -77,9 +77,9 @@ async function loadToggleModels() {
                         const mixer = new THREE.AnimationMixer(model);
 
                         const label = new Label(`T_Switch ${i}`, {
-                            width: 550,
+                            width: 590,
                             height: 120,
-                            fontSize: 90,
+                            fontSize: 85,
                             backgroundColor: "#ffeeaa",
                             borderColor: "#000000",
                             textColor: "#000000",
@@ -151,9 +151,9 @@ async function loadButtons() {
                         const mixer = new THREE.AnimationMixer(model);
 
                         const label = new Label(`Button ${2 - i}`, {
-                            width: 550,
+                            width: 590,
                             height: 120,
-                            fontSize: 90,
+                            fontSize: 85,
                             backgroundColor: "#ffeeaa",
                             borderColor: "#000000",
                             textColor: "#000000",

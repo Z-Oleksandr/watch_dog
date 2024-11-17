@@ -46,7 +46,7 @@ export class Label {
         }
 
         ctx.fillStyle = this.textColor;
-        ctx.font = `${this.fontSize}px Arial`;
+        ctx.font = `800 ${this.fontSize}px orbitron`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(this.text, this.width / 2, this.height / 2);

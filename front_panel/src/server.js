@@ -18,7 +18,7 @@ app.use(express.static("dist"));
 app.use(express.static("public"));
 
 app.get("/", function (req, res) {
-    res.sendFile(path.join(__dirname, "index.html"));
+    res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
 const server = app.listen(9000, function () {
