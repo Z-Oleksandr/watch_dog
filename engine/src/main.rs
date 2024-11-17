@@ -1,5 +1,8 @@
-use std::{collections:: HashSet, net::{IpAddr, SocketAddr}, time::Duration};
-use sysinfo::{Components, Disks, Networks, System};
+use std::{collections:: HashSet, net::SocketAddr, time::Duration};
+use sysinfo::{
+    Disks,
+    Networks, System
+};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use serde::Serialize;
@@ -172,6 +175,22 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             network_transmitted,
             uptime,
         };
+
+        // let mut sys_processes = System::new_all();
+        // std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        // sys_processes.refresh_processes_specifics(
+        //     ProcessesToUpdate::All, 
+        //     true,
+        //     ProcessRefreshKind::new().with_cpu()
+        // );
+
+        // // Processes Data
+        // for (_pid, process) in sys_processes.processes() {
+        //     println!("Name: {:?}; Usage: {}", 
+        //         process.name(),
+        //         process.cpu_usage()
+        //     );
+        // }
 
         // Serialize stats to JSON
         let stats_json = serde_json::to_string(&stats).unwrap();

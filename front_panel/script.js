@@ -14,6 +14,12 @@ let cpu_section = document.getElementsByClassName("cSec")[0];
 let ramandnet_section = document.getElementsByClassName("ramandnet")[0];
 let disk_section = document.getElementsByClassName("dSec")[0];
 
+function isMobile() {
+    const regex =
+        /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    return regex.test(navigator.userAgent);
+}
+
 function getSectionSize(section) {
     let sec_width = section.offsetWidth;
     let sec_height = section.offsetHeight;
@@ -57,6 +63,67 @@ let opts_general = {
     },
 };
 
+class Display2 {
+    constructor(display) {
+        this.container = display;
+        this.current = 0;
+        let row_count;
+        if (!isMobile()) {
+            row_count = 7;
+        } else {
+            row_count = 4;
+        }
+        for (let i = 0; i < row_count; i++) {
+            this[`row${i}`] = this.create_p(display);
+        }
+        this.init_message();
+    }
+
+    create_p(display) {
+        const row = document.createElement("p");
+        row.classList.add("display2Row");
+        if (!isMobile()) {
+            row.style.fontSize = "14px";
+        } else {
+            row.style.fontSize = "9px";
+        }
+        display.appendChild(row);
+        return row;
+    }
+
+    init_message() {
+        this.write_line("Display 2 initialized.");
+    }
+
+    write_line(text) {
+        if (this.current < 7) {
+            const currentRow = this[`row${this.current}`];
+            currentRow.textContent = text;
+            this.current += 1;
+        } else {
+            const currentRow = this.row6;
+            let holdThis1 = currentRow.textContent;
+            console.log("Holdthis1: " + holdThis1);
+            let holdThis2;
+            for (let i = 5; i >= 0; i--) {
+                if (i % 2 !== 0) {
+                    holdThis2 = this[`row${i}`].textContent;
+                    console.log("Holdthis2: " + holdThis2);
+                    this[`row${i}`].textContent = holdThis1;
+                    if (i != 0) {
+                        holdThis1 = this[`row${i - 1}`].textContent;
+                        console.log("Holdthis1 last: " + holdThis1);
+                    }
+                } else {
+                    this[`row${i}`].textContent = holdThis2;
+                }
+            }
+            currentRow.textContent = text;
+            this.current += 1;
+        }
+    }
+}
+
 let all_cpu_gauges = [];
 let cpu_clusters = new Array(4);
 
@@ -67,6 +134,9 @@ let ram_gauge;
 let numCPUs;
 
 let net_canvas;
+
+// Init Display
+const display2 = new Display2(document.getElementsByClassName("display_2")[0]);
 
 ws.onmessage = function (event) {
     const data_stream = JSON.parse(event.data);
@@ -340,7 +410,7 @@ ws.onmessage = function (event) {
 
     // Display
     if (data_stream.data_type == 2) {
-        let display = document.getElementsByClassName("display")[0];
+        const display = document.getElementsByClassName("display")[0];
         initDisplay(display);
         setTimeout(() => {
             let column1 = document.createElement("div");
@@ -568,11 +638,15 @@ function findGaugeSizeQuadro(number, conWidth, conHeight, spacing) {
 
 function updateUptime(value) {
     const location = document.getElementById("column2");
-    const p_items = location.querySelectorAll("p");
-    for (const p of p_items) {
-        if (p.textContent.includes("uptime")) {
-            p.textContent = "uptime: " + formatSecondsToTime(value);
+    try {
+        const p_items = location.querySelectorAll("p");
+        for (const p of p_items) {
+            if (p.textContent.includes("uptime")) {
+                p.textContent = "uptime: " + formatSecondsToTime(value);
+            }
         }
+    } catch (e) {
+        "No updatime yet... " + e;
     }
 }
 
@@ -590,7 +664,7 @@ function formatSecondsToTime(seconds_input) {
         minutes.toString().padStart(2, "0") +
         ":" +
         seconds.toString().padStart(2, "0") +
-        " hours.";
+        " hours";
     return timeString;
 }
 

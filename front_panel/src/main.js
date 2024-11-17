@@ -10,6 +10,7 @@ import {
 } from "./toggle_switch";
 import { addButton3D, updateButton3DMixers, buttons } from "./button";
 import { init, getScale, isMobile } from "./init";
+import { Label } from "./label";
 
 const control2_window = document.getElementsByClassName("control2")[0];
 
@@ -75,6 +76,25 @@ async function loadToggleModels() {
 
                         const mixer = new THREE.AnimationMixer(model);
 
+                        const label = new Label(`T_Switch ${i}`, {
+                            width: 550,
+                            height: 120,
+                            fontSize: 90,
+                            backgroundColor: "#ffeeaa",
+                            borderColor: "#000000",
+                            textColor: "#000000",
+                            borderWidth: 5,
+                        });
+
+                        const labelMesh = label.getMesh();
+
+                        labelMesh.position.set(
+                            -22 * scale + i * 6.9 * scale,
+                            -4,
+                            0
+                        );
+                        scene.add(labelMesh);
+
                         if (gltf.animations.length > 0) {
                             let action = mixer.clipAction(gltf.animations[0]);
                             action.loop = THREE.LoopOnce;
@@ -85,7 +105,7 @@ async function loadToggleModels() {
                             action.time = 0;
                             action.paused = true;
 
-                            addToggleSwitch(model, action, mixer);
+                            addToggleSwitch(model, action, mixer, label);
                         }
 
                         resolve();
@@ -130,6 +150,25 @@ async function loadButtons() {
 
                         const mixer = new THREE.AnimationMixer(model);
 
+                        const label = new Label(`Button ${2 - i}`, {
+                            width: 550,
+                            height: 120,
+                            fontSize: 90,
+                            backgroundColor: "#ffeeaa",
+                            borderColor: "#000000",
+                            textColor: "#000000",
+                            borderWidth: 5,
+                        });
+
+                        const labelMesh = label.getMesh();
+
+                        labelMesh.position.set(
+                            22 * scale - i * 6.9 * scale,
+                            -4,
+                            0
+                        );
+                        scene.add(labelMesh);
+
                         if (gltf.animations.length > 0) {
                             let action = mixer.clipAction(gltf.animations[0]);
                             action.loop = THREE.LoopOnce;
@@ -140,7 +179,7 @@ async function loadButtons() {
                             action.time = 0;
                             action.paused = true;
 
-                            addButton3D(model, action, mixer);
+                            addButton3D(model, action, mixer, label);
                         }
 
                         resolve();
