@@ -94,13 +94,22 @@ class Display2 {
     init_message() {
         setTimeout(() => {
             this.write_line("Display 2 initialized.");
-        }, 5500);
+        }, 5001);
+    }
+
+    loading() {
+        for (let i = 0; i < 77; i++) {
+            setTimeout(() => {
+                this.row0.textContent = `loading [${"#".repeat(i)}]`;
+            }, (5000 / 77) * i);
+        }
     }
 
     write_line(text) {
         if (this.current < 7) {
             const currentRow = this[`row${this.current}`];
-            currentRow.textContent = text;
+            // currentRow.textContent = text;
+            this.terminal_animation(text, currentRow);
             this.current += 1;
         } else {
             const currentRow = this.row6;
@@ -123,6 +132,18 @@ class Display2 {
             currentRow.textContent = text;
             this.current += 1;
         }
+    }
+
+    terminal_animation(text, rowTextContent) {
+        let i = 0;
+        const interval = setInterval(() => {
+            rowTextContent.textContent += text[i];
+            i++;
+
+            if (i >= text.length) {
+                clearInterval(interval);
+            }
+        }, 100);
     }
 }
 
@@ -533,6 +554,9 @@ ws.onmessage = function (event) {
 
 ws.onopen = function () {
     console.log("WebSocket connection esablished");
+    setTimeout(() => {
+        display2.write_line("WebSocket connection established");
+    }, 5005);
 };
 
 ws.onerror = function (error) {
