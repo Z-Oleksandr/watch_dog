@@ -106,31 +106,35 @@ class Display2 {
     }
 
     write_line(text) {
-        if (this.current < 7) {
-            const currentRow = this[`row${this.current}`];
-            // currentRow.textContent = text;
-            this.terminal_animation(text, currentRow);
-            this.current += 1;
-        } else {
-            const currentRow = this.row6;
-            let holdThis1 = currentRow.textContent;
-            console.log("Holdthis1: " + holdThis1);
-            let holdThis2;
-            for (let i = 5; i >= 0; i--) {
-                if (i % 2 !== 0) {
-                    holdThis2 = this[`row${i}`].textContent;
-                    console.log("Holdthis2: " + holdThis2);
-                    this[`row${i}`].textContent = holdThis1;
-                    if (i != 0) {
-                        holdThis1 = this[`row${i - 1}`].textContent;
-                        console.log("Holdthis1 last: " + holdThis1);
+        if (text.length <= 80) {
+            if (this.current < 7) {
+                const currentRow = this[`row${this.current}`];
+                // currentRow.textContent = text;
+                this.terminal_animation(text, currentRow);
+                this.current += 1;
+            } else {
+                const currentRow = this.row6;
+                let holdThis1 = currentRow.textContent;
+                let holdThis2;
+                for (let i = 5; i >= 0; i--) {
+                    if (i % 2 !== 0) {
+                        holdThis2 = this[`row${i}`].textContent;
+                        this[`row${i}`].textContent = holdThis1;
+                        if (i != 0) {
+                            holdThis1 = this[`row${i - 1}`].textContent;
+                        }
+                    } else {
+                        this[`row${i}`].textContent = holdThis2;
                     }
-                } else {
-                    this[`row${i}`].textContent = holdThis2;
                 }
+                this.terminal_animation(text, currentRow);
+                this.current += 1;
             }
-            currentRow.textContent = text;
-            this.current += 1;
+        } else {
+            this.write_line(text.slice(0, 40));
+            setTimeout(() => {
+                this.write_line(text.slice(40));
+            }, 500);
         }
     }
 
@@ -143,7 +147,7 @@ class Display2 {
             if (i >= text.length) {
                 clearInterval(interval);
             }
-        }, 100);
+        }, 12);
     }
 }
 
