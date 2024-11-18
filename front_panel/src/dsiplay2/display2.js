@@ -55,7 +55,7 @@ export class Display2 {
                 const currentRow = this[`row${this.current}`];
                 this.terminal_animation(text, currentRow);
             } else {
-                const currentRow = this.row6;
+                const currentRow = this[`row${this.row_count - 1}`];
                 let holdThis1 = currentRow.textContent;
                 let holdThis2;
                 for (let i = 5; i >= 0; i--) {
