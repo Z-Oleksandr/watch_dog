@@ -51,7 +51,7 @@ export class Display2 {
 
     write_line(text) {
         if (text.length <= 80) {
-            if (this.current < 7) {
+            if (this.current < this.row_count) {
                 const currentRow = this[`row${this.current}`];
                 this.terminal_animation(text, currentRow);
             } else {
@@ -80,7 +80,7 @@ export class Display2 {
     }
 
     clear_terminal() {
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < this.row_count; i++) {
             this[`row${i}`].textContent = "";
         }
         this.current = 0;
