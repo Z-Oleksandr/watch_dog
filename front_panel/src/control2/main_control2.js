@@ -11,7 +11,17 @@ import {
 import { addButton3D, updateButton3DMixers, buttons } from "./button";
 import { init, getScale, isMobile } from "./init";
 import { Label } from "./label";
-import { Indicator, indicators, updateIndiMixers } from "./indicator";
+import {
+    addIndicator,
+    Indicator,
+    indicators,
+    updateIndiMixers,
+} from "./indicator";
+import { isWSConnected, getWS } from "../script";
+import {
+    assign_button_1,
+    assign_button_2,
+} from "../button_functions/button_functions";
 
 const control2_window = document.getElementsByClassName("control2")[0];
 
@@ -106,15 +116,12 @@ async function loadToggleModels() {
                             action.time = 0;
                             action.paused = true;
 
-                            addToggleSwitch(model, action, mixer, label);
+                            addToggleSwitch(i, model, action, mixer, label);
                         }
 
                         resolve();
                     },
-
-                    (xhr) => {
-                        console.log((xhr.loaded / xhr.total) * 100 + "%loaded");
-                    },
+                    null,
                     (error) => {
                         console.warn("Error loading toggle switch: " + error);
                         reject(error);
@@ -180,7 +187,7 @@ async function loadButtons() {
                             action.time = 0;
                             action.paused = true;
 
-                            addButton3D(model, action, mixer, label);
+                            addButton3D(i, model, action, mixer, label);
                         }
 
                         resolve();
@@ -212,46 +219,51 @@ async function loadIndicators() {
                 } else {
                     model_to_load = "models/indicators/indicator2_red.gltf";
                 }
-                loader.load(model_to_load, (gltf) => {
-                    const model = gltf.scene;
-                    model.rotation.set(1.069, 0, 0);
-                    model.position.set(0, 2.69 * scale - i * 3 * scale, 0);
-                    const specific_scale = scale * 0.69;
-                    model.scale.set(
-                        specific_scale,
-                        specific_scale,
-                        specific_scale
-                    );
-                    gltf.animations;
-                    scene.add(model);
+                loader.load(
+                    model_to_load,
+                    (gltf) => {
+                        const model = gltf.scene;
+                        model.rotation.set(1.069, 0, 0);
+                        model.position.set(0, 2.69 * scale - i * 3 * scale, 0);
+                        const specific_scale = scale * 0.69;
+                        model.scale.set(
+                            specific_scale,
+                            specific_scale,
+                            specific_scale
+                        );
+                        gltf.animations;
+                        scene.add(model);
 
-                    const mixer = new THREE.AnimationMixer(model);
+                        const mixer = new THREE.AnimationMixer(model);
 
-                    const indicator = new Indicator(model, mixer);
-                    indicators.push(indicator);
-                });
+                        addIndicator(i, model, mixer);
+                        resolve();
+                    },
+                    null,
+                    (error) => {
+                        reject(error);
+                    }
+                );
             })
     );
+    try {
+        await Promise.all(modelPromises);
+    } catch (error) {
+        console.error("One or more buttons failed to load.", error);
+    }
 }
 
 loadToggleModels();
 
-loadButtons();
-
-loadIndicators().then(() => {
-    console.log("Let's gooooo: ");
-    indicators.forEach((e) => {
-        console.log(e);
-    });
+loadButtons().then(() => {
+    assign_button_1();
+    assign_button_2();
 });
 
-setTimeout(() => {
-    toggle_switches.forEach((t_switch, i) => {
-        t_switch.addDoing(() => {
-            indicators[i].indi_toggle();
-        });
-    });
-}, 5000);
+loadIndicators().then(() => {
+    isWSConnected(getWS());
+});
+
 // const light = new THREE.AmbientLight(0x404040, 100);
 
 // const light = new THREE.PointLight(0xff0000, 10, 100);
@@ -289,7 +301,7 @@ function handleClick(event) {
         }
 
         const clickedToggleSwitch = toggle_switches.find(
-            (switchObj) => switchObj.model === parentModel
+            (object) => object.model === parentModel
         );
 
         if (clickedToggleSwitch) {
@@ -298,7 +310,7 @@ function handleClick(event) {
         }
 
         const clickedButton = buttons.find(
-            (switchObj) => switchObj.model === parentModel
+            (object) => object.model === parentModel
         );
 
         if (clickedButton) {
@@ -306,9 +318,16 @@ function handleClick(event) {
             return;
         }
 
+        const clickedIndicator = indicators.find(
+            (object) => object.model === parentModel
+        );
+
+        if (clickedIndicator) {
+            console.log("Clicked indicator");
+            return;
+        }
+
         console.warn("Clicked uncknown model");
-    } else {
-        console.log("Clicked empty");
     }
 }
 

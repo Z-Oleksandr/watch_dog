@@ -1,21 +1,32 @@
 import * as THREE from "three";
 
 export class Indicator {
-    constructor(model, mixer) {
+    constructor(number, model, mixer) {
+        this.number = number;
         this.model = model;
         this.mixer = mixer;
         this.state = false;
+        this.blinking_state = false;
+        this.interval;
     }
 
     on() {
+        if (this.blinking_state) {
+            clearInterval(this.interval);
+            this.blinking_state = false;
+        }
         const light_change = 20;
-        animateEmission(this.model, light_change);
+        changeEmissionStrength(this.model, light_change);
         this.state = true;
     }
 
     off() {
+        if (this.blinking_state) {
+            clearInterval(this.interval);
+            this.blinking_state = false;
+        }
         const light_change = 1;
-        animateEmission(this.model, light_change);
+        changeEmissionStrength(this.model, light_change);
         this.state = false;
     }
 
@@ -23,6 +34,13 @@ export class Indicator {
         const light_change = this.state ? 1 : 20;
         changeEmissionStrength(this.model, light_change);
         this.state = !this.state;
+    }
+
+    blinking() {
+        console.log("Blinking");
+        if (this.blinking_state) return;
+        this.blinking_state = true;
+        this.interval = setInterval(() => this.indi_toggle(), 500);
     }
 }
 
@@ -32,6 +50,12 @@ export function updateIndiMixers(delta) {
     indicators.forEach((indi) => {
         indi.mixer.update(delta);
     });
+}
+
+export function addIndicator(i, model, mixer) {
+    const indicator = new Indicator(i, model, mixer);
+    indicators.push(indicator);
+    indicators.sort((a, b) => a.number - b.number);
 }
 
 export function changeEmissionStrength(model, intensity) {
