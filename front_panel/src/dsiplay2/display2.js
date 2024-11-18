@@ -1,17 +1,24 @@
 import { isMobile } from "../script";
 
+const displayContainer = document.getElementsByClassName("display_2")[0];
+const displayHeight = displayContainer.clientHeight;
+
 export class Display2 {
     constructor(display) {
         this.container = display;
         this.current = 0;
         this.initialSetupState = true;
-        let row_count;
+        this.fontSize;
+        this.row_count;
         if (!isMobile()) {
-            row_count = 7;
+            this.fontSize = "14px";
+            console.log("Lines: " + Math.floor(displayHeight / (1.69 * 14)));
+            this.row_count = Math.floor(displayHeight / (1.69 * 14));
         } else {
-            row_count = 4;
+            this.fontSize = "9px";
+            this.row_count = Math.floor(displayHeight / (1.69 * 9));
         }
-        for (let i = 0; i < row_count; i++) {
+        for (let i = 0; i < this.row_count; i++) {
             this[`row${i}`] = this.create_p(display);
         }
         this.init_message();
@@ -22,11 +29,7 @@ export class Display2 {
     create_p(display) {
         const row = document.createElement("p");
         row.classList.add("display2Row");
-        if (!isMobile()) {
-            row.style.fontSize = "14px";
-        } else {
-            row.style.fontSize = "9px";
-        }
+        row.style.fontSize = this.fontSize;
         display.appendChild(row);
         return row;
     }
@@ -113,7 +116,7 @@ export class Display2 {
 }
 
 // Init Display
-const display2 = new Display2(document.getElementsByClassName("display_2")[0]);
+const display2 = new Display2(displayContainer);
 
 export function getDisplay2() {
     return display2;

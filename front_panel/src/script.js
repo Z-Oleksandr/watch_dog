@@ -55,10 +55,10 @@ export function isWSConnected(ws) {
     } else {
         if (indicators[2].state == false && !display2.initialSetupState) {
             display2.write_line("WebSocket connection closed");
+            zero_gauges();
         }
         indicators[0].off();
         indicators[2].on();
-        zero_gauges();
     }
     return state;
 }
