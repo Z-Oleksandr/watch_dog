@@ -40,7 +40,9 @@ export function init() {
     const pointer = new THREE.Vector2();
 
     // Background
-    const iron_plate = new THREE.TextureLoader().load("/img/iron_plate2.jpg");
+    const iron_plate = new THREE.TextureLoader().load(
+        "/img_wd/iron_plate2.jpg"
+    );
     scene.background = iron_plate;
 
     scene.backgroundIntensity = 0.42;
