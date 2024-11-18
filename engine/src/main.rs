@@ -1,15 +1,10 @@
-use std::{collections:: HashSet, net::SocketAddr, time::Duration};
-use sysinfo::{
-    Disks,
-    Networks, System
-};
+use std::{net::SocketAddr, time::Duration};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use serde::Serialize;
 use futures::{StreamExt, SinkExt};
-
-mod helpers;
-use helpers::{is_initialized_disk, is_not_pidor};
+use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
+use rand::Rng;
 
 #[derive(Serialize)]
 struct SystemStats {
@@ -46,63 +41,52 @@ struct SystemInfo {
 async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     println!("New Socket connection: {}", addr);
 
+    let mut rng = ChaCha20Rng::from_entropy();
+
     let ws_stream = accept_async(raw_stream)
         .await
         .expect("Failed to accept");
 
-    // Split ws stream into sender and receiver
     let (mut write, _) = ws_stream.split();
 
-    let mut sys = System::new_all();
-
-    // Get static disks data
-    let disks = Disks::new_with_refreshed_list();
     let mut disks_space = Vec::new();
     let mut disk_count: u32 = 0;
 
-    let mut disk_register: HashSet<String> = HashSet::new();
+    let disks_used_space: Vec<u64> = (0..3)
+        .map(|_| rng.gen_range(0..250))
+        .collect();
 
-    for disk in disks.list() {
-        // For linux we need to filter non-physical drives
-        if is_not_pidor(disk.name(), &mut disk_register) {
-            disks_space.push(disk.total_space() / 1000000000);
-            disk_count += 1;
-        }
+    for _i in 0..3 {
+        disks_space.push(rng.gen_range(250..=3000));
+        disk_count += 1;
     }
 
-    // Init Network data
-    let mut networks = Networks::new_with_refreshed_list();
+    let ram_total = rng.gen_range(1..=8) * 4;
 
-    // Send static system data
     let system_data = SystemData {
         data_type: 0,
-        num_cpus: sys.cpus().len(),
+        num_cpus: 4,
         num_disks: disk_count,
         disks_space,
-        init_ram_total: sys.total_memory() / 1000000000,
+        init_ram_total: ram_total,
     };
 
     let system_data_json = serde_json::to_string(&system_data).unwrap();
-    write.send(Message::Text(system_data_json))
+    write.send(Message::text(system_data_json))
         .await.expect("Error sending static data");
 
     // Prepare SystemInfo
-    let system_name = System::name()
-        .unwrap_or("System name not found".to_string());
+    let system_name = "Demo system".to_string();
 
-    let kernel_version = System::kernel_version()
-        .unwrap_or("Kernel version not available".to_string());
+    let kernel_version = "4.20.69".to_string();
 
-    let cpu_arch = System::cpu_arch()
-        .unwrap_or("cpu_arch not found".to_string());
+    let cpu_arch = "Demo system arch".to_string();
 
-    let os_version = System::os_version()
-        .unwrap_or("x.x.x".to_string());
+    let os_version = "12345.77".to_string();
 
-    let host_name = System::host_name()
-        .unwrap_or("Host name not found".to_string());
+    let host_name = "seraphim".to_string();
 
-    let uptime = System::uptime();
+    let mut uptime: u64 = 123456789;
 
     let system_info = SystemInfo {
         data_type: 2,
@@ -120,96 +104,57 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
     time::sleep(Duration::from_secs(5)).await;
 
+    let mut loop_counter = 0;
+
+    let mut cpu_usage: Vec<f32> = vec![0.0, 0.0, 0.0, 0.0];
+    let mut ram_used = 1000;
+    let mut network_received = 0;
+    let mut network_transmitted = 0;
+
     loop {
-        sys.refresh_all();
-
-        // CPU data
-        let cpu_usage = sys.cpus()
-            .iter()
-            .map(|cpu| cpu.cpu_usage())
-            .collect();
-
-        // RAM data
-        let ram_total = sys.total_memory() / 1000000000;
-        let ram_used = sys.used_memory() / 1000000; // In MB
-
-        // Disk data
-        let disks = Disks::new_with_refreshed_list();
-        let mut disks_used_space = Vec::new();
-
-        for disk in disks.list() {
-            // For linux we need to filter non-physical drives
-            if is_initialized_disk(
-                    disk.name(), 
-                    &disk_register,
-                    disk.mount_point()
-                ) {
-                disks_used_space.push(
-                    (disk.total_space() - disk.available_space()) / 1000000000
-                );
-            }
+        if loop_counter % 5 == 0 || loop_counter == 0 {
+            cpu_usage = (0..4)
+                .map(|_| rng.gen_range(0.0..=100.0))
+                .collect();
+            ram_used = rng.gen_range(1000..(ram_total * 1000));
         }
 
-        // Network data
-        networks.refresh();
-        let mut interfaces = Vec::new();
-        let mut network_received = 0;
-        let mut network_transmitted = 0;
-        for (_iface, data) in &networks {
-            interfaces.push(_iface);
-            network_received += (data.received() * 8) / 1000;
-            network_transmitted += (data.transmitted() * 8) / 1000;
-            // println!("Rec: {}", data.received());
-            // println!("Transmit: {}", data.transmitted());
+        network_received = 0;
+        network_transmitted = 0;
+        if loop_counter % 11 == 0 {
+            network_received += rng.gen_range(0..500000);
+            network_transmitted += rng.gen_range(0..500000);
         }
 
-        let uptime = System::uptime();
+        uptime += 1;
 
         let stats = SystemStats {
             data_type: 1,
-            cpu_usage,
+            cpu_usage: cpu_usage.clone(),
             ram_total,
             ram_used,
-            disks_used_space,
+            disks_used_space: disks_used_space.clone(),
             network_received,
             network_transmitted,
-            uptime,
+            uptime
         };
 
-        // let mut sys_processes = System::new_all();
-        // std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        // sys_processes.refresh_processes_specifics(
-        //     ProcessesToUpdate::All, 
-        //     true,
-        //     ProcessRefreshKind::new().with_cpu()
-        // );
-
-        // // Processes Data
-        // for (_pid, process) in sys_processes.processes() {
-        //     println!("Name: {:?}; Usage: {}", 
-        //         process.name(),
-        //         process.cpu_usage()
-        //     );
-        // }
-
-        // Serialize stats to JSON
         let stats_json = serde_json::to_string(&stats).unwrap();
 
-        // Send stats over WebSocket
         if let Err(e) = write.send(Message::Text(stats_json)).await {
             eprintln!("Error sending stats: {}", e);
             break;
         }
 
+        loop_counter += 1;
         time::sleep(Duration::from_secs(1)).await;
     }
 }
 
 #[tokio::main]
-async fn main() { 
-    // let addr = "127.0.0.1:8999";
+async fn main() {
     let addr = "0.0.0.0:8999";
-    let listener = TcpListener::bind(&addr).await.expect("Failed to build");
+    let listener = TcpListener::bind(&addr).await.expect("Failed to bind");
     println!("WebSocket server listening on {}", addr);
 
     while let Ok((stream, addr)) = listener.accept().await {
