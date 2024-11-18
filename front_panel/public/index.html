@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>System_Monitor</title>
+        <script src="/gauges/gauge.min.js"></script>
+        <link rel="stylesheet" href="/css/style.css" />
+        <link rel="stylesheet" href="/css/control_window_style.css" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/x-icon" />
+    </head>
+    <body>
+        <div class="thatsAllFolks">
+            <div class="container">
+                <div class="cSec section">
+                    <div id="cpu"></div>
+                </div>
+                <div class="center section">
+                    <table class="centerTable">
+                        <tr class="ramandnet centerSec">
+                            <td>
+                                <div class="ramSubSection">
+                                    <div id="ram"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="netSubSection">
+                                    <div id="network"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="info centerSec centerSquares">
+                            <td>
+                                <div class="display roundness"></div>
+                            </td>
+                        </tr>
+                        <tr class="controls centerSec centerSquares">
+                            <td>
+                                <div class="display_2 roundness"></div>
+                                <div class="control2 roundness">
+                                    <div class="cover"></div>
+                                    <canvas id="control2"></canvas>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="dSec section">
+                    <div class="diskSubSection">
+                        <p class="gTitle">Storage:</p>
+                        <div id="disks"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="module" src="/main.js"></script>
+    </body>
+</html>

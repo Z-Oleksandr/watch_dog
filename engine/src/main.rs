@@ -1,5 +1,8 @@
-use std::{collections::{HashMap, HashSet}, net::SocketAddr, time::Duration};
-use sysinfo::{Networks, System, Components, Disks};
+use std::{collections:: HashSet, net::SocketAddr, time::Duration};
+use sysinfo::{
+    Disks,
+    Networks, System
+};
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use serde::Serialize;
@@ -17,6 +20,7 @@ struct SystemStats {
     disks_used_space: Vec<u64>,
     network_received: u64,
     network_transmitted: u64,
+    uptime: u64,
 }
 
 #[derive(Serialize)]
@@ -26,6 +30,17 @@ struct SystemData {
     num_disks: u32,
     disks_space: Vec<u64>,
     init_ram_total: u64,
+}
+
+#[derive(Serialize)]
+struct SystemInfo {
+    data_type: u32,
+    system_name: String,
+    kernel_version: String,
+    cpu_arch: String,
+    os_version: String,
+    host_name: String,
+    uptime: u64,
 }
 
 async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
@@ -71,6 +86,38 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     write.send(Message::Text(system_data_json))
         .await.expect("Error sending static data");
 
+    // Prepare SystemInfo
+    let system_name = System::name()
+        .unwrap_or("System name not found".to_string());
+
+    let kernel_version = System::kernel_version()
+        .unwrap_or("Kernel version not available".to_string());
+
+    let cpu_arch = System::cpu_arch()
+        .unwrap_or("cpu_arch not found".to_string());
+
+    let os_version = System::os_version()
+        .unwrap_or("x.x.x".to_string());
+
+    let host_name = System::host_name()
+        .unwrap_or("Host name not found".to_string());
+
+    let uptime = System::uptime();
+
+    let system_info = SystemInfo {
+        data_type: 2,
+        system_name,
+        kernel_version,
+        cpu_arch,
+        os_version,
+        host_name,
+        uptime
+    };
+
+    let system_info_json = serde_json::to_string(&system_info).unwrap();
+    write.send(Message::Text(system_info_json))
+        .await.expect("Error sending system info");
+
     time::sleep(Duration::from_secs(5)).await;
 
     loop {
@@ -84,7 +131,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
         // RAM data
         let ram_total = sys.total_memory() / 1000000000;
-        let ram_used = sys.used_memory() / 1000000000;
+        let ram_used = sys.used_memory() / 1000000; // In MB
 
         // Disk data
         let disks = Disks::new_with_refreshed_list();
@@ -116,6 +163,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             // println!("Transmit: {}", data.transmitted());
         }
 
+        let uptime = System::uptime();
+
         let stats = SystemStats {
             data_type: 1,
             cpu_usage,
@@ -124,7 +173,24 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
             disks_used_space,
             network_received,
             network_transmitted,
+            uptime,
         };
+
+        // let mut sys_processes = System::new_all();
+        // std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        // sys_processes.refresh_processes_specifics(
+        //     ProcessesToUpdate::All, 
+        //     true,
+        //     ProcessRefreshKind::new().with_cpu()
+        // );
+
+        // // Processes Data
+        // for (_pid, process) in sys_processes.processes() {
+        //     println!("Name: {:?}; Usage: {}", 
+        //         process.name(),
+        //         process.cpu_usage()
+        //     );
+        // }
 
         // Serialize stats to JSON
         let stats_json = serde_json::to_string(&stats).unwrap();
@@ -140,7 +206,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() { 
     // let addr = "127.0.0.1:8999";
     let addr = "0.0.0.0:8999";
     let listener = TcpListener::bind(&addr).await.expect("Failed to build");
