@@ -14,6 +14,7 @@ export function assign_toggle_2() {
       display2.write_line("Finished testing net gauges");
       max_net_gauges(false);
     })
+    toggle_switches[2].label.updateText("net_g test");
   } catch {
     setTimeout(assign_toggle_2, 1000);
   }
