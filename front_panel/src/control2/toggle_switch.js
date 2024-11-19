@@ -28,7 +28,9 @@ export class ToggleSwitch {
             this.action.play();
         }
         if (this.doing) {
-            this.doing();
+            setTimeout(() => {
+                this.doing();
+            }, 500);
         } else {
             const display2 = getDisplay2();
             display2.write_line("No function assigned to this t_switch");
