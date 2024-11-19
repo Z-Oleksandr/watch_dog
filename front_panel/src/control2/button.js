@@ -27,7 +27,7 @@ export class Button3D {
         if (this.doing) {
             setTimeout(() => {
                 this.doing();
-            }, 500);
+            }, 200);
         } else {
             const display2 = getDisplay2();
             display2.write_line("No function assigned to this button");
