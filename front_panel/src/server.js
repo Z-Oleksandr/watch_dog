@@ -9,7 +9,7 @@ app.use(express.static(__dirname));
 app.use(
     "/ws",
     createProxyMiddleware({
-        target: "ws://0.0.0.0:8999",
+        target: "wss://theblog.sbmedia.cloud:8999",
         ws: true,
     })
 );
@@ -22,5 +22,5 @@ app.get("/", function (req, res) {
 });
 
 const server = app.listen(9000, function () {
-    console.log("front_panel server running at http://localhost:9000");
+    console.log("front_panel listening at port 9000");
 });
