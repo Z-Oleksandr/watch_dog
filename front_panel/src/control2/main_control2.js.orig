@@ -254,11 +254,15 @@ async function loadIndicators() {
     }
 }
 
+<<<<<<< HEAD
 let modelLoadState = [false, false, false];
 
 loadToggleModels().then(() => {
-	assign_toggle_2();
     modelLoadState[0] = true;
+=======
+loadToggleModels().then(() => {
+    assign_toggle_2();
+>>>>>>> main
 });
 
 loadButtons().then(() => {

@@ -64,7 +64,9 @@ let ram_gauge;
 
 let numCPUs;
 
-let net_canvas;
+let net_canvases = [];
+
+let net_testing = false;
 
 let ui_initialized = {
     gauges: false,
@@ -222,7 +224,7 @@ export function server_communication(ws) {
                 }
                 document.getElementById("network").appendChild(label);
 
-                net_canvas = document.createElement("canvas");
+                let net_canvas = document.createElement("canvas");
                 net_canvas.id = `netCanvas${i}`;
                 net_canvas.width = netGaugeSize[0] - 10;
                 net_canvas.height = netGaugeSize[1] - 10;
@@ -264,6 +266,7 @@ export function server_communication(ws) {
                 }
 
                 let net_gauge = new Gauge(net_canvas).setOptions(opts_net);
+                net_canvases.push(net_canvas);
                 net_gauge.maxValue = 500; // Mbps
                 net_gauge.setMinValue(0);
                 net_gauge.animationSpeed = 500;
@@ -431,11 +434,19 @@ export function server_communication(ws) {
 
             // Network
             // Data is sent in Kpbs
-            let net_received = data_stream.network_received;
-            let net_transmitted = data_stream.network_transmitted;
+            let net_received;
+            let net_transmitted;
+            if (net_testing) {
+                net_received = 999000;
+                net_transmitted = 999000;
+            } else {
+                net_received = data_stream.network_received;
+                net_transmitted = data_stream.network_transmitted;
+            }
 
             let opts_net_max = Object.assign({}, opts_general, {
                 staticLabels: {
+                    font: "18px orbitron",
                     labels: [0, 250, 500, 750, 1000],
                     color: "#000000",
                     fractionDigits: 0,
@@ -459,16 +470,23 @@ export function server_communication(ws) {
                 ],
             });
 
-            if (net_received > 500000 && all_net_gauges[0].maxValue != 1000) {
-                all_net_gauges[0] = new Gauge(net_canvas).setOptions(
+            // Down
+            if (
+                net_received > 500000 && 
+                all_net_gauges[0].maxValue != 1000
+            ) {
+                all_net_gauges[0] = new Gauge(net_canvases[0]).setOptions(
                     opts_net_max
                 );
                 all_net_gauges[0].maxValue = 1000;
-            } else if (
+            } 
+
+            // Up
+            if (
                 net_transmitted > 500000 &&
                 all_net_gauges[1].maxValue != 1000
             ) {
-                all_net_gauges[1] = new Gauge(net_canvas).setOptions(
+                all_net_gauges[1] = new Gauge(net_canvases[1]).setOptions(
                     opts_net_max
                 );
                 all_net_gauges[1].maxValue = 1000;
@@ -510,6 +528,15 @@ export function zero_gauges() {
     all_gauges.forEach((gauge) => {
         gauge.set(0);
     });
+}
+
+// For testing purposes
+export function max_net_gauges(state) {
+    if (state) {
+        net_testing = true;
+    } else {
+        net_testing = false;
+    }
 }
 
 function createRamCanvas() {

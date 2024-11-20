@@ -9,12 +9,16 @@ export class ToggleSwitch {
         this.mixer = mixer;
         this.state = state;
         this.label = label;
-        this.doing = null;
+        this.doing = [null, null];
     }
 
-    addDoing(callback) {
-        if (callback && typeof callback === "function") {
-            this.doing = callback;
+    addDoing(callback0, callback1) {
+        if (
+            typeof callback0 === "function" &&
+            typeof callback1 === "function"
+            ) {
+            this.doing[0] = callback0;
+            this.doing[1] = callback1;
         } else {
             console.warn("Attempt to assing not a function to t_switch doing.");
         }
@@ -27,8 +31,16 @@ export class ToggleSwitch {
             this.action.paused = false;
             this.action.play();
         }
-        if (this.doing) {
-            this.doing();
+        if (this.doing[0] && this.doing[1]) {
+            if (this.state) {
+                setTimeout(() => {
+                    this.doing[0]();
+                }, 200);
+            } else {
+                setTimeout(() => {
+                    this.doing[1]();
+                }, 200);
+            }
         } else {
             const display2 = getDisplay2();
             display2.write_line("No function assigned to this t_switch");
