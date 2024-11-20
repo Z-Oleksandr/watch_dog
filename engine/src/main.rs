@@ -107,7 +107,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     let mut loop_counter = 0;
 
     let mut cpu_usage: Vec<f32> = vec![15.0, 16.0, 17.0, 18.0];
-    let mut ram_used = (ram_total as f64 * 0.42);
+    let mut ram_used = ((ram_total * 1000) as f64 * 0.42);
     let mut network_received = 0;
     let mut network_transmitted = 0;
 
