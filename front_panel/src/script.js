@@ -79,4 +79,6 @@ ws.onopen = function () {
 
 ws.onerror = function (error) {
     console.error("WebSocket error: ", error);
+    display2.write_line("Websocket connection error.");
+    display2.write_line("Try to reset Websocket.");
 };

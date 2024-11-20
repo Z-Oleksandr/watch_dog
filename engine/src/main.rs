@@ -106,24 +106,25 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
     let mut loop_counter = 0;
 
-    let mut cpu_usage: Vec<f32> = vec![0.0, 0.0, 0.0, 0.0];
-    let mut ram_used = 1000;
+    let mut cpu_usage: Vec<f32> = vec![15.0, 16.0, 17.0, 18.0];
+    let mut ram_used = (ram_total as f64 * 0.42) as u64;
     let mut network_received = 0;
     let mut network_transmitted = 0;
 
     loop {
         if loop_counter % 5 == 0 || loop_counter == 0 {
-            cpu_usage = (0..4)
-                .map(|_| rng.gen_range(0.0..=100.0))
+            cpu_usage = cpu_usage
+                .iter()
+                .map(|usage| (usage * rng.gen_range(0.5..=1.5)).min(100.0))
                 .collect();
-            ram_used = rng.gen_range(1000..(ram_total * 1000));
+            ram_used = (ram_used * rng.gen_range(0.5..=1.5) as u64).min(ram_total);
         }
 
         network_received = 0;
         network_transmitted = 0;
-        if loop_counter % 11 == 0 {
-            network_received += rng.gen_range(0..500000);
-            network_transmitted += rng.gen_range(0..500000);
+        if loop_counter % 10 == 0 {
+            network_received += rng.gen_range(0..900000);
+            network_transmitted += rng.gen_range(0..900000);
         }
 
         uptime += 1;

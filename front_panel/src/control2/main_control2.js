@@ -253,14 +253,20 @@ async function loadIndicators() {
     }
 }
 
-loadToggleModels();
+let modelLoadState = [false, false, false];
+
+loadToggleModels().then(() => {
+    modelLoadState[0] = true;
+});
 
 loadButtons().then(() => {
+    modelLoadState[1] = true;
     assign_button_1();
     assign_button_2();
 });
 
 loadIndicators().then(() => {
+    modelLoadState[2] = true;
     isWSConnected(getWS());
 });
 
@@ -360,6 +366,22 @@ function render(delta) {
 
 const cover = document.getElementsByClassName("cover")[0];
 
-setTimeout(() => {
-    cover.style.transform = "translateY(-100%)";
-}, 5000);
+let modelLoadInterval = setInterval(() => {
+    if (checkModelLoadState) {
+        cover.style.transform = "translateY(-100%)";
+        clearInterval(modelLoadInterval);
+    }
+});
+
+function checkModelLoadState() {
+    let checkSum = 0;
+    for (let i = 0; i < 3; i++) {
+        if (modelLoadState[i]) {
+            checkSum += 1;
+        }
+    }
+    if (checkSum == 3) {
+        return true;
+    }
+    return false;
+}
