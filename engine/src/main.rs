@@ -107,7 +107,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     let mut loop_counter = 0;
 
     let mut cpu_usage: Vec<f32> = vec![15.0, 16.0, 17.0, 18.0];
-    let mut ram_used = ((ram_total * 1000) as f64 * 0.42);
+    let ram_total_MB = (ram_total * 1000) as f64;
+    let mut ram_used = (ram_total_MB * 0.42);
     let mut network_received = 0;
     let mut network_transmitted = 0;
 
@@ -117,7 +118,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
                 .iter()
                 .map(|usage| (usage * rng.gen_range(0.5..=1.5)).min(100.0))
                 .collect();
-            ram_used = (ram_used * rng.gen_range(0.5..=1.5)).min(ram_total as f64);
+            ram_used = (ram_used * rng.gen_range(0.5..=1.5)).min(ram_total_MB);
         }
 
         network_received = 0;
