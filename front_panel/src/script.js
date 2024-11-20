@@ -7,9 +7,9 @@ import {
     zero_gauges,
 } from "./server_connection/server_connection";
 
-let ws = new WebSocket(`wss://${window.location.hostname}:8999`);
+let ws = new WebSocket(`wss://${window.location.hostname}/wss`);
 
-let connectionAt = `wss://${window.location.hostname}:8999`;
+let connectionAt = `wss://${window.location.hostname}/wss`;
 console.log("WS connection at: " + connectionAt);
 
 export function isMobile() {
