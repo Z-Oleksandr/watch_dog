@@ -153,7 +153,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 
 #[tokio::main]
 async fn main() {
-    let addr = "0.0.0.0:8999";
+    let addr = "0.0.0.0:8998";
     let listener = TcpListener::bind(&addr).await.expect("Failed to bind");
     println!("WebSocket server listening on {}", addr);
 
