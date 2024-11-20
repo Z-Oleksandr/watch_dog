@@ -55,7 +55,11 @@ export function isWSConnected(ws) {
     } else {
         if (indicators[2].state == false && !display2.initialSetupState) {
             display2.write_line("WebSocket connection closed");
-            zero_gauges();
+            try {
+                zero_gauges();
+            } catch {
+                console.log("Gauges were not yet initialised");
+            }
         }
         indicators[0].off();
         indicators[2].on();

@@ -112,7 +112,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     let mut network_transmitted = 0;
 
     loop {
-        if loop_counter % 5 == 0 || loop_counter == 0 {
+        if loop_counter % 2 == 0 || loop_counter == 0 {
             cpu_usage = cpu_usage
                 .iter()
                 .map(|usage| (usage * rng.gen_range(0.5..=1.5)).min(100.0))

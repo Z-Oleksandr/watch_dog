@@ -368,7 +368,9 @@ const cover = document.getElementsByClassName("cover")[0];
 
 let modelLoadInterval = setInterval(() => {
     if (checkModelLoadState) {
-        cover.style.transform = "translateY(-100%)";
+        setTimeout(() => {
+            cover.style.transform = "translateY(-100%)";
+        }, 4000);
         clearInterval(modelLoadInterval);
     }
 });
