@@ -1,7 +1,7 @@
 use std::{collections:: HashSet, net::SocketAddr, time::Duration};
 use sysinfo::{
-    Disks,
-    Networks, System
+    Disks, Networks, 
+    System, Components
 };
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
@@ -123,6 +123,8 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     loop {
         sys.refresh_all();
 
+        check_components();
+
         // CPU data
         let cpu_usage = sys.cpus()
             .iter()
@@ -206,7 +208,7 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
 }
 
 #[tokio::main]
-async fn main() { 
+async fn main() {
     // let addr = "127.0.0.1:8999";
     let addr = "0.0.0.0:8999";
     let listener = TcpListener::bind(&addr).await.expect("Failed to build");
@@ -214,5 +216,16 @@ async fn main() {
 
     while let Ok((stream, addr)) = listener.accept().await {
         tokio::spawn(handle_connection(stream, addr));
+    }
+}
+
+fn check_components() {
+    println!("Checking components");
+    let components = Components::new_with_refreshed_list();
+    for component in components.list() {
+        println!("{component:?}");
+    }
+    for comp in &components {
+        println!("{} {}°C", comp.label(), comp.temperature());
     }
 }
