@@ -22,7 +22,10 @@ import {
     assign_button_1,
     assign_button_2,
 } from "../button_functions/button_functions";
-import { assign_toggle_2 } from "../toggle_functions/toggle_functions";
+import {
+    assign_toggle_0,
+    assign_toggle_2,
+} from "../toggle_functions/toggle_functions";
 
 const control2_window = document.getElementsByClassName("control2")[0];
 
@@ -255,6 +258,7 @@ async function loadIndicators() {
 }
 
 loadToggleModels().then(() => {
+    assign_toggle_0();
     assign_toggle_2();
 });
 

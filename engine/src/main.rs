@@ -4,9 +4,12 @@ use sysinfo::{
     Networks, System
 };
 use tokio::{net::{TcpListener, TcpStream}, time};
-use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
-use serde::Serialize;
-use futures::{StreamExt, SinkExt};
+use tokio_tungstenite::{
+    accept_async, tungstenite::protocol::Message, 
+    WebSocketStream
+};
+use serde::{Serialize, Deserialize};
+use futures::{StreamExt, SinkExt, stream::SplitStream};
 
 mod helpers;
 use helpers::{is_initialized_disk, is_not_pidor};
@@ -43,6 +46,23 @@ struct SystemInfo {
     uptime: u64,
 }
 
+#[derive(Deserialize, Debug)]
+struct IncomingMessage {
+    r#type: String,
+    message: String,
+}
+
+async fn handle_read(mut read:SplitStream<WebSocketStream<TcpStream>>) {
+    // Read message
+    while let Some(Ok(msg)) = read.next().await {
+        if let Ok(text) = msg.to_text() {
+            if let Ok(incoming_msg) = serde_json::from_str::<IncomingMessage>(text) {
+                println!("Received: {:?}", incoming_msg);
+            }
+        }
+    }
+}
+
 async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
     println!("New Socket connection: {}", addr);
 
@@ -51,7 +71,9 @@ async fn handle_connection(raw_stream: TcpStream, addr: SocketAddr) {
         .expect("Failed to accept");
 
     // Split ws stream into sender and receiver
-    let (mut write, _) = ws_stream.split();
+    let (mut write, mut read) = ws_stream.split();
+
+    tokio::spawn(handle_read(read));
 
     let mut sys = System::new_all();
 
