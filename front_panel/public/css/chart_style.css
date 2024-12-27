@@ -29,6 +29,14 @@
     z-index: 1;
 }
 
+#chartTitle {
+    position: absolute;
+    top: 5px;
+    left: 9px;
+    font-size: large;
+    z-index: 1;
+}
+
 .chartContainer {
     width: 100%;
     height: 100%;

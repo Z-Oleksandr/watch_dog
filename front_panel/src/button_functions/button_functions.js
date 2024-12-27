@@ -34,6 +34,7 @@ export function assign_button_0() {
     try {
         buttons[0].addDoing(() => spawn_chart());
         buttons[0].label.updateText("show chart");
+        buttons[0].defaultLabel = "show chart";
     } catch {
         setTimeout(assign_button_0, 1000);
     }
@@ -44,6 +45,7 @@ export function assign_button_1() {
         const display2 = getDisplay2();
         buttons[1].addDoing(() => display2.clear_terminal());
         buttons[1].label.updateText("clear D2");
+        buttons[1].defaultLabel = "clear D2";
     } catch {
         setTimeout(assign_button_1, 1000);
     }
@@ -53,6 +55,7 @@ export function assign_button_2() {
     try {
         buttons[2].addDoing(() => reconnectWS());
         buttons[2].label.updateText("reset WS");
+        buttons[2].defaultLabel = "reset WS";
     } catch {
         setTimeout(assign_button_2, 1000);
     }

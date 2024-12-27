@@ -29,6 +29,12 @@ function createChartWindow() {
 
     closeChartButton.addEventListener("click", () => closeChartWindow());
 
+    let chartTitle = document.createElement("div");
+    chartTitle.id = "chartTitle";
+    chartTitle.textContent = "Log file 0";
+
+    chartWindow.appendChild(chartTitle);
+
     const chartData = [
         { id: "cpu", chartFn: getChart0 },
         { id: "ram", chartFn: getChart1 },
@@ -160,7 +166,7 @@ function getChart2(canvasElement) {
                 borderColor: "rgba(64, 67, 255, 1)",
                 fill: false,
                 lineTension: 0.1,
-                pointBackgroundColor: "rgba(255, 159, 64, 1)",
+                pointBackgroundColor: "rgba(64, 67, 255, 1)",
                 pointRadius: 5,
                 pointHoverRadius: 7,
             },
