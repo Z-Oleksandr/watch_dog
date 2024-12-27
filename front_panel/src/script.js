@@ -6,6 +6,7 @@ import {
     server_communication,
     zero_gauges,
 } from "./server_connection/server_connection";
+import { spawn_chart } from "./chart/chart";
 
 let ws = new WebSocket(`ws://${window.location.hostname}:8999`);
 

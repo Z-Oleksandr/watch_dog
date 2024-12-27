@@ -11,7 +11,7 @@ use futures::{StreamExt, SinkExt, stream::SplitStream};
 mod helpers;
 
 mod system_info;
-use system_info::{get_system_data, get_system_info, DISK_REGISTER};
+use system_info::{get_system_data, get_system_info};
 
 mod system_stats;
 use system_stats::get_system_stats;

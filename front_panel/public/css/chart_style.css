@@ -1,0 +1,43 @@
+#chartWindow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 2vw;
+
+    border: 2px solid black;
+    border-radius: 5px;
+    width: 90vw;
+    height: 79vh;
+    background-color: white;
+
+    display: grid;
+    align-items: center;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-columns: auto;
+    grid-template-areas: "cpu" "ram" "net";
+    gap: 5px;
+    z-index: 3;
+}
+
+#closeChart {
+    position: absolute;
+    top: 5px;
+    right: 9px;
+    font-size: x-large;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.chartContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chartCanvases {
+    width: 100%;
+    height: 100%;
+}

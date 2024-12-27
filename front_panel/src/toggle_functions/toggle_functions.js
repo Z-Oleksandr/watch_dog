@@ -17,6 +17,7 @@ export function assign_toggle_0() {
                 sendWSMessage("info", "Finish test request");
             }
         );
+        toggle_switches[0].label.updateText("Test request");
     } catch {
         setTimeout(assign_toggle_0, 1000);
     }

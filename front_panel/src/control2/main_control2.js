@@ -19,6 +19,7 @@ import {
 } from "./indicator";
 import { isWSConnected, getWS } from "../script";
 import {
+    assign_button_0,
     assign_button_1,
     assign_button_2,
 } from "../button_functions/button_functions";
@@ -263,6 +264,7 @@ loadToggleModels().then(() => {
 });
 
 loadButtons().then(() => {
+    assign_button_0();
     assign_button_1();
     assign_button_2();
 });
