@@ -155,15 +155,16 @@ export function server_communication(ws) {
             start_gauges(all_cpu_gauges);
 
             // init RAM
+            let init_ram_total = Math.round(data_stream.init_ram_total / 1000);
             let opts_ram = Object.assign({}, opts_general, {
                 staticLabels: {
                     font: "18px orbitron",
                     labels: [
                         0,
-                        (0.8 * data_stream.init_ram_total) / 3,
-                        data_stream.init_ram_total / 2,
-                        (2.2 * data_stream.init_ram_total) / 3,
-                        data_stream.init_ram_total,
+                        (0.8 * init_ram_total) / 3,
+                        init_ram_total / 2,
+                        (2.2 * init_ram_total) / 3,
+                        init_ram_total,
                     ],
                     color: "#000000",
                     fractionDigits: 0,
@@ -171,22 +172,22 @@ export function server_communication(ws) {
                 staticZones: [
                     {
                         strokeStyle: "#F03E3E",
-                        min: 0.8 * data_stream.init_ram_total,
-                        max: data_stream.init_ram_total,
+                        min: 0.8 * init_ram_total,
+                        max: init_ram_total,
                     }, // Red
                     {
                         strokeStyle: "#FFDD00",
-                        min: 0.6 * data_stream.init_ram_total,
-                        max: 0.8 * data_stream.init_ram_total,
+                        min: 0.6 * init_ram_total,
+                        max: 0.8 * init_ram_total,
                     }, // Yellow
                     {
                         strokeStyle: "#30B32D",
                         min: 0,
-                        max: 0.6 * data_stream.init_ram_total,
+                        max: 0.6 * init_ram_total,
                     }, // Green
                 ],
                 renderTicks: {
-                    divisions: data_stream.init_ram_total,
+                    divisions: init_ram_total,
                     divWidth: 1.1,
                     divLength: 0.7,
                     divColor: "#333333",
@@ -198,7 +199,7 @@ export function server_communication(ws) {
             });
 
             ram_gauge = new Gauge(createRamCanvas()).setOptions(opts_ram);
-            ram_gauge.maxValue = data_stream.init_ram_total;
+            ram_gauge.maxValue = init_ram_total;
             ram_gauge.setMinValue(0);
             ram_gauge.animationSpeed = 500;
 
@@ -428,7 +429,7 @@ export function server_communication(ws) {
             // Disks
             data_stream.disks_used_space.forEach((u_s, i) => {
                 if (all_disk_gauges[i]) {
-                    all_disk_gauges[i].set(u_s);
+                    all_disk_gauges[i].set(u_s / 1000);
                 }
             });
 
@@ -471,15 +472,12 @@ export function server_communication(ws) {
             });
 
             // Down
-            if (
-                net_received > 500000 && 
-                all_net_gauges[0].maxValue != 1000
-            ) {
+            if (net_received > 500000 && all_net_gauges[0].maxValue != 1000) {
                 all_net_gauges[0] = new Gauge(net_canvases[0]).setOptions(
                     opts_net_max
                 );
                 all_net_gauges[0].maxValue = 1000;
-            } 
+            }
 
             // Up
             if (
