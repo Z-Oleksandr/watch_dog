@@ -113,8 +113,11 @@ function buttonsInitChartOptions(logChart) {
             get_log_data(logChart.logNumber)
                 .then(({ logCNRData, logNETData }) => {
                     display.write_line("Log data received.");
+
                     console.log("CNR:", logCNRData);
                     console.log("NET:", logNETData);
+
+                    buttonsReadyChartOptions(logCNRData, logNETData);
                 })
                 .catch((error) => {
                     display.write_line("Error getting log data");
@@ -151,7 +154,21 @@ function buttonsInitChartOptions(logChart) {
     );
 }
 
-function createChartWindow() {
+function buttonsReadyChartOptions(logCNRData, logNETData) {
+    new_assign_button(
+        0,
+        () => {
+            createChartWindow(
+                logCNRData[0][1],
+                logCNRData[1][1],
+                logNETData[0][1]
+            );
+        },
+        "show chart"
+    );
+}
+
+function createChartWindow(cpuLog, ramLog, netLog) {
     let topContainer = document.getElementsByClassName("thatsAllFolks")[0];
 
     let chartWindow = document.createElement("div");
@@ -179,9 +196,9 @@ function createChartWindow() {
     chartWindow.appendChild(chartTitle);
 
     const chartData = [
-        { id: "cpu", chartFn: getChart0 },
-        { id: "ram", chartFn: getChart1 },
-        { id: "net", chartFn: getChart2 },
+        { id: "cpu", chartFn: getChart0, log: cpuLog },
+        { id: "ram", chartFn: getChart1, log: ramLog },
+        { id: "net", chartFn: getChart2, log: netLog },
     ];
 
     chartData.forEach((data, index) => {
@@ -198,7 +215,7 @@ function createChartWindow() {
 
         chartWindow.appendChild(chartContainer);
 
-        data.chartFn(chart);
+        data.chartFn(chart, data.log);
     });
 }
 
@@ -209,15 +226,26 @@ function closeChartWindow() {
     display.write_line("Chart window closed.");
 }
 
-function getChart0(canvasElement) {
+function getChart0(canvasElement, cpuLog) {
     const ctx = canvasElement.getContext("2d");
 
+    let labels = [];
+    let logData = [];
+
+    cpuLog.forEach((elem) => {
+        labels.push(elem.time_stamp);
+    });
+
+    cpuLog.forEach((elem) => {
+        logData.push(elem.value);
+    });
+
     let data = {
-        labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        labels: labels,
         datasets: [
             {
                 label: "CPU Load (%)",
-                data: [12, 15, 18, 22, 25, 20, 30, 35, 33, 28],
+                data: logData,
                 borderColor: "rgba(75, 192, 192, 1)",
                 fill: false,
                 lineTension: 0.1,
@@ -248,7 +276,7 @@ function getChart0(canvasElement) {
     });
 }
 
-function getChart1(canvasElement) {
+function getChart1(canvasElement, ramLog) {
     const ctx = canvasElement.getContext("2d");
 
     let data = {
@@ -287,7 +315,7 @@ function getChart1(canvasElement) {
     });
 }
 
-function getChart2(canvasElement) {
+function getChart2(canvasElement, netLog) {
     const ctx = canvasElement.getContext("2d");
 
     let data = {
