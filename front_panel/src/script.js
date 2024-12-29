@@ -36,7 +36,7 @@ export function sendWSMessage(type, message) {
     try {
         ws.send(
             JSON.stringify({
-                type: type,
+                type: type.toString(),
                 message: message,
             })
         );

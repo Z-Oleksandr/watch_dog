@@ -33,8 +33,8 @@ export function setResetState(state) {
 export function assign_button_0() {
     try {
         buttons[0].addDoing(() => spawn_chart());
-        buttons[0].label.updateText("show chart");
-        buttons[0].defaultLabel = "show chart";
+        buttons[0].label.updateText("get chart");
+        buttons[0].defaultLabel = "get chart";
     } catch {
         setTimeout(assign_button_0, 1000);
     }
@@ -59,4 +59,22 @@ export function assign_button_2() {
     } catch {
         setTimeout(assign_button_2, 1000);
     }
+}
+
+export function new_assign_button(i, callback, label) {
+    if (callback && typeof callback === "function") {
+        buttons[i].doing = callback;
+        buttons[i].label.updateText(label);
+    } else {
+        console.warn("Attempt to assing not a function to button doing.");
+    }
+}
+
+export function default_buttons() {
+    buttons.forEach((b) => {
+        if (b.defaultDoing) {
+            b.doing = b.defaultDoing;
+            b.label.updateText(b.defaultLabel);
+        }
+    });
 }

@@ -11,12 +11,12 @@ use crate::system_info::DISK_REGISTER;
 #[derive(Serialize)]
 pub struct SystemStats {
     data_type: u32,
-    cpu_usage: Vec<f32>,
+    pub cpu_usage: Vec<f32>,
     ram_total: u64,
-    ram_used: u64,
+    pub ram_used: u64,
     disks_used_space: Vec<u64>,
-    network_received: u64,
-    network_transmitted: u64,
+    pub network_received: u64,
+    pub network_transmitted: u64,
     uptime: u64,
 }
 

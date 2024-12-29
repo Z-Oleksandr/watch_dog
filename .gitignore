@@ -128,3 +128,5 @@ dist
 package-lock.json
 
 front_panel/dist/
+
+logs/*.json

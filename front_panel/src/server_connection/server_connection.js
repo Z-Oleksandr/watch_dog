@@ -1,5 +1,6 @@
 import { isMobile } from "../script";
 import { indicators } from "../control2/indicator";
+import { update_log_list, update_log_data } from "../chart/chart";
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");
@@ -77,6 +78,7 @@ export function server_communication(ws) {
     ws.onmessage = function (event) {
         const data_stream = JSON.parse(event.data);
 
+        // data_types: 0..=3
         if (data_stream.data_type == 0 || data_stream.data_type == 2) {
             if (indicators[0]) {
                 indicators[0].blinking();
@@ -494,6 +496,14 @@ export function server_communication(ws) {
 
             // Updating uptime
             updateUptime(data_stream.uptime);
+        }
+
+        if (data_stream.data_type == 3) {
+            update_log_list(data_stream.log_list);
+        }
+
+        if (data_stream.data_type == 4) {
+            update_log_data(data_stream.cnr_data, data_stream.net_data);
         }
     };
 }

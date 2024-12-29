@@ -1,11 +1,154 @@
+import {
+    new_assign_button,
+    default_buttons,
+} from "../button_functions/button_functions";
 import { getDisplay2 } from "../dsiplay2/display2";
+import { sendWSMessage } from "../script";
 import Chart from "chart.js/auto";
+
+class LogChart {
+    constructor() {
+        this.logList;
+        this.logNumber = 0;
+    }
+}
 
 let display = getDisplay2();
 
+let logList;
+let logCNRData;
+let logNETData;
+
 export function spawn_chart() {
-    display.write_line("Getting the chart.");
-    createChartWindow();
+    display.write_line("Getting the log list...");
+
+    let logChart = new LogChart();
+
+    get_log_list()
+        .then((logList) => {
+            display.write_line("Log list:");
+            logList.forEach(([index, log]) => {
+                display.write_line(index + ": " + log);
+            });
+
+            logChart.logList = logList;
+
+            display.write_line("Pick log to display");
+            display.pending_choice("Log number: 0");
+            buttonsInitChartOptions(logChart);
+        })
+        .catch((error) => {
+            display.write_line("Error getting log list.");
+            console.error("Error getting log list:", error);
+        });
+}
+
+export function update_log_list(newLogList) {
+    logList = Object.entries(newLogList);
+}
+
+function get_log_list() {
+    logList = null;
+
+    sendWSMessage("get_log_list", 0);
+
+    return new Promise((res, rej) => {
+        const interval = 100;
+        const timeout = 5000;
+        const startTime = Date.now();
+
+        const checkLogList = () => {
+            if (logList) {
+                res(logList);
+            } else if (Date.now() - startTime > timeout) {
+                rej(new Error("Timeout waiting for log list"));
+            } else {
+                setTimeout(checkLogList, interval);
+            }
+        };
+
+        checkLogList();
+    });
+}
+
+export function update_log_data(newCNRData, newNETData) {
+    logCNRData = Object.entries(newCNRData);
+    logNETData = Object.entries(newNETData);
+}
+
+function get_log_data(logFileNumber) {
+    logCNRData = null;
+    logNETData = null;
+
+    sendWSMessage("get_log_data", logFileNumber);
+
+    return new Promise((res, rej) => {
+        const interval = 100;
+        const timeout = 5000;
+        const startTime = Date.now();
+
+        const checkLogData = () => {
+            if (logCNRData && logNETData) {
+                res({ logCNRData, logNETData });
+            } else if (Date.now - startTime > timeout) {
+                rej(new Error("Timeout waiting for log data."));
+            } else {
+                setTimeout(checkLogData, interval);
+            }
+        };
+
+        checkLogData();
+    });
+}
+
+function buttonsInitChartOptions(logChart) {
+    new_assign_button(
+        0,
+        () => {
+            display.pending_choice(
+                "Log file picked: " + logChart.logNumber,
+                true
+            );
+            default_buttons();
+            get_log_data(logChart.logNumber)
+                .then(({ logCNRData, logNETData }) => {
+                    display.write_line("Log data received.");
+                    console.log("CNR:", logCNRData);
+                    console.log("NET:", logNETData);
+                })
+                .catch((error) => {
+                    display.write_line("Error getting log data");
+                    console.error("Error getting log data:", error);
+                });
+        },
+        "Accept"
+    );
+    new_assign_button(
+        1,
+        () => {
+            if (logChart.logNumber < logList.length - 1) {
+                logChart.logNumber += 1;
+                display.pending_choice(
+                    `Log number: ${logChart.logNumber}`,
+                    false
+                );
+            }
+        },
+        "+"
+    );
+    new_assign_button(
+        2,
+        () => {
+            if (logChart.logNumber > 1) {
+                logChart.logNumber -= 1;
+                display.pending_choice(
+                    `Log number: ${logChart.logNumber}`,
+                    false
+                );
+            }
+        },
+        "-"
+    );
 }
 
 function createChartWindow() {
