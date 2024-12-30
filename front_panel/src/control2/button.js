@@ -7,12 +7,17 @@ export class Button3D {
         this.action = action;
         this.mixer = mixer;
         this.label = label;
+        this.defaultLabel = null;
         this.doing = null;
+        this.defaultDoing = null;
     }
 
     addDoing(callback) {
         if (callback && typeof callback === "function") {
             this.doing = callback;
+            if (!this.defaultDoing) {
+                this.defaultDoing = this.doing;
+            }
         } else {
             console.warn("Attempt to assing not a function to button doing.");
         }
@@ -31,6 +36,15 @@ export class Button3D {
         } else {
             const display2 = getDisplay2();
             display2.write_line("No function assigned to this button");
+        }
+    }
+
+    resetToDefault() {
+        if (this.defaultDoing) {
+            this.doing = this.defaultDoing;
+        }
+        if (this.defaultLabel) {
+            this.label.updateText(this.defaultLabel);
         }
     }
 }

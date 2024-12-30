@@ -23,6 +23,7 @@ export class Display2 {
         }
         this.init_message();
         this.terminalWriting = false;
+        this.terminalPending = false;
         this.textQueue = [];
     }
 
@@ -75,6 +76,34 @@ export class Display2 {
             this.write_line(text.slice(0, 40));
             setTimeout(() => {
                 this.write_line(text.slice(40));
+            }, 500);
+        }
+    }
+
+    pending_choice(text, isFinalUpdate) {
+        if (text.length > 80) {
+            console.warn("Text too long for pending_choice!");
+            return;
+        }
+
+        const rowIndex =
+            this.current < this.row_count ? this.current : this.row_count - 1;
+        const row = this[`row${rowIndex}`];
+
+        if (!this.terminalWriting) {
+            row.textContent = text;
+            this.terminalPending = !isFinalUpdate;
+            this.terminalWriting = true;
+        } else if (this.terminalPending) {
+            row.textContent = text;
+            if (isFinalUpdate) {
+                this.terminalPending = false;
+                this.terminalWriting = false;
+                this.current += 1;
+            }
+        } else if (this.terminalWriting && !this.terminalPending) {
+            setTimeout(() => {
+                this.pending_choice(text, isFinalUpdate);
             }, 500);
         }
     }

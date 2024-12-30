@@ -31,6 +31,19 @@ export function getWS() {
     });
 }
 
+export function sendWSMessage(type, message) {
+    try {
+        ws.send(
+            JSON.stringify({
+                type: type.toString(),
+                message: message,
+            })
+        );
+    } catch (err) {
+        display2.write_line("Message send failed: " + err);
+    }
+}
+
 export function resetWS(newWS) {
     ws = newWS;
     server_communication(ws);

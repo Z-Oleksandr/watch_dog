@@ -1,6 +1,6 @@
 {
     "name": "front_panel",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "",
     "main": "dist/main.js",
     "scripts": {
@@ -23,6 +23,8 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "chart.js": "^4.4.7",
+        "chartjs-plugin-zoom": "^2.2.0",
         "express": "^4.21.0",
         "http-proxy-middleware": "^3.0.2",
         "npm-run-all": "^2.1.0",
