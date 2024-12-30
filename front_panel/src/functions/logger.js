@@ -34,7 +34,7 @@ function buttonsLogOptions(logStartRequest) {
             sendWSMessage(logStartRequest.type, logStartRequest.time);
             init_functions();
         },
-        "Start"
+        "start"
     );
     new_assign_button(
         1,

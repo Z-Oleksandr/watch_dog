@@ -38,7 +38,7 @@ function extraButton0() {
             display.write_line("Start logging setup");
             setTimeout(() => start_logger(), 1000);
         },
-        "Logging"
+        "logging"
     );
 }
 

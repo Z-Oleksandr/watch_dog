@@ -20,8 +20,8 @@ export function assign_toggle_0() {
                 disable_functions();
             }
         );
-        toggle_switches[0].label.updateText("Functions");
-        toggle_switches[0].defaultLabel = "Functions";
+        toggle_switches[0].label.updateText("functions");
+        toggle_switches[0].defaultLabel = "functions";
     } catch {
         setTimeout(assign_toggle_0, 1000);
     }

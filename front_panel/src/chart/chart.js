@@ -180,7 +180,7 @@ function buttonsInitChartOptions(logChart) {
                 default_buttons();
             }
         },
-        "Accept"
+        "accept"
     );
     new_assign_button(
         1,

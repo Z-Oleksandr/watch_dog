@@ -33,3 +33,36 @@ And that is basically it, **however** that is more of a test run. In order to fu
 10. To have pm2 automatically run on system startup execute: `pm2 startup`
 
 Note: On a linux system you might need to make sure the binary has executable permissions. For example from project root execute: `chmod +x /engine/app_linux/engine`
+
+## Instruction manual:
+
+### Start logging process
+
+-   In order to start the process of logging system stats (cpu, ram and network) you need to follow these steps:
+
+1. Flip the `functions` toggle switch
+2. Press the `logging` button
+3. Using `+` and `-` buttons select the duration of the log recording (in hours)
+4. Press `start` button (to cancel flip the `functions` toggle switch)
+
+That's it - the process of recording logs has started.
+
+### Display charts for a log
+
+-   You can choose a previously created log file and display the data as a diagram.
+
+1. Press `get chart` button
+2. Using `+` and `-` buttons select the number of the log, which you want to display
+3. Press `accept` button
+4. Press `show chart` button
+
+That's it - a visual representation of the chosen log will be displayed.
+
+### Display latest log on a chart
+
+-   You can use a shortcut and directly display the latest available log. If a logging process is in progress - the state at the moment of request, of the log, which is being created, will be displayed. The logging process will continue nonetheless.
+
+1. Flip the `ext buttons` toggle switch
+2. Press `latest log` button
+
+That's it - a visual representation of the latest log will be displayed.
