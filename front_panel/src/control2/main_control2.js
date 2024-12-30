@@ -25,6 +25,7 @@ import {
 } from "../button_functions/button_functions";
 import {
     assign_toggle_0,
+    assign_toggle_1,
     assign_toggle_2,
 } from "../toggle_functions/toggle_functions";
 
@@ -260,6 +261,7 @@ async function loadIndicators() {
 
 loadToggleModels().then(() => {
     assign_toggle_0();
+    assign_toggle_1();
     assign_toggle_2();
 });
 

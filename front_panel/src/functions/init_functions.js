@@ -8,10 +8,19 @@ import { start_logger } from "./logger";
 let display = getDisplay2();
 
 export function init_functions() {
-    display.write_line("Enable extra functions");
-    extraButton0();
-    extraButton1();
-    extraButton2();
+    if (toggle_switches[1].state) {
+        toggle_switches[1].toggle().then(() => {
+            display.write_line("Enable extra functions");
+            extraButton0();
+            extraButton1();
+            extraButton2();
+        });
+    } else {
+        display.write_line("Enable extra functions");
+        extraButton0();
+        extraButton1();
+        extraButton2();
+    }
 }
 
 export function disable_functions() {

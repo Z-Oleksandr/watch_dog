@@ -77,7 +77,7 @@ export function spawn_chart() {
 
             logChart.logList = logList;
 
-            display.write_line("Pick log to display");
+            display.write_line("Pick log to display ( -1 to cancel )");
             display.write_line(" ");
             display.pending_choice("Log number: 0");
             buttonsInitChartOptions(logChart);
@@ -150,21 +150,30 @@ function buttonsInitChartOptions(logChart) {
     new_assign_button(
         0,
         () => {
-            display.pending_choice(
-                "Log file picked: " + logChart.logNumber,
-                true
-            );
-            default_buttons();
-            get_log_data(logChart.logNumber)
-                .then(({ logCNRData, logNETData }) => {
-                    display.write_line("Log data received.");
-                    buttonsReadyChartOptions(logChart, logCNRData, logNETData);
-                    display.write_line("Chart available to show");
-                })
-                .catch((error) => {
-                    display.write_line("Error getting log data");
-                    console.error("Error getting log data:", error);
-                });
+            if (logChart.logNumber != -1) {
+                display.pending_choice(
+                    "Log file picked: " + logChart.logNumber,
+                    true
+                );
+                default_buttons();
+                get_log_data(logChart.logNumber)
+                    .then(({ logCNRData, logNETData }) => {
+                        display.write_line("Log data received.");
+                        buttonsReadyChartOptions(
+                            logChart,
+                            logCNRData,
+                            logNETData
+                        );
+                        display.write_line("Chart available to show");
+                    })
+                    .catch((error) => {
+                        display.write_line("Error getting log data");
+                        console.error("Error getting log data:", error);
+                    });
+            } else {
+                display.pending_choice("Log file pick cancelled", true);
+                default_buttons();
+            }
         },
         "Accept"
     );
@@ -190,6 +199,9 @@ function buttonsInitChartOptions(logChart) {
                     `Log number: ${logChart.logNumber}`,
                     false
                 );
+            } else if (logChart.logNumber == 0) {
+                logChart.logNumber = -1;
+                display.pending_choice("Log number: cancel?", false);
             }
         },
         "-"
@@ -206,6 +218,7 @@ function buttonsReadyChartOptions(logChart, logCNRData, logNETData) {
                 logCNRData[1][1], // Array of key: value pairs
                 logNETData[0][1] // Object with key: value
             );
+            default_buttons();
         },
         "show chart"
     );
@@ -319,7 +332,7 @@ function getChart1(logChart, canvasElement, ramLog) {
         labels: labels,
         datasets: [
             {
-                label: "Memory Usage (%)",
+                label: "Memory Usage (GB)",
                 data: logData,
                 borderColor: "rgba(153, 102, 255, 1)",
                 fill: false,
@@ -385,5 +398,25 @@ function getChart2(logChart, canvasElement, netLog) {
         type: "line",
         data: data,
         options: logChart.options,
+    });
+}
+
+export function show_latest_chart() {
+    display.write_line("Getting latest log chart");
+
+    let logChart = new LogChart();
+
+    get_log_list().then((logList) => {
+        logChart.logList = logList;
+        const latestLogIndex = logList.length - 1;
+        logChart.logNumber = latestLogIndex;
+        get_log_data(latestLogIndex).then(({ logCNRData, logNETData }) => {
+            createChartWindow(
+                logChart,
+                logCNRData[0][1],
+                logCNRData[1][1],
+                logNETData[0][1]
+            );
+        });
     });
 }

@@ -32,26 +32,31 @@ export class ToggleSwitch {
     }
 
     toggle() {
-        if (this.action) {
-            this.state = !this.state;
-            this.action.timeScale = this.state ? 1 : -1;
-            this.action.paused = false;
-            this.action.play();
-        }
-        if (this.doing[0] && this.doing[1]) {
-            if (this.state) {
-                setTimeout(() => {
-                    this.doing[0]();
-                }, 200);
-            } else {
-                setTimeout(() => {
-                    this.doing[1]();
-                }, 200);
+        return new Promise((res, rej) => {
+            if (this.action) {
+                this.state = !this.state;
+                this.action.timeScale = this.state ? 1 : -1;
+                this.action.paused = false;
+                this.action.play();
             }
-        } else {
-            const display2 = getDisplay2();
-            display2.write_line("No function assigned to this t_switch");
-        }
+            if (this.doing[0] && this.doing[1]) {
+                if (this.state) {
+                    setTimeout(() => {
+                        this.doing[0]();
+                        res();
+                    }, 200);
+                } else {
+                    setTimeout(() => {
+                        this.doing[1]();
+                        res();
+                    }, 200);
+                }
+            } else {
+                const display2 = getDisplay2();
+                display2.write_line("No function assigned to this t_switch");
+                res();
+            }
+        });
     }
 
     resetToDefault() {
