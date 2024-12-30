@@ -158,11 +158,8 @@ function buttonsInitChartOptions(logChart) {
             get_log_data(logChart.logNumber)
                 .then(({ logCNRData, logNETData }) => {
                     display.write_line("Log data received.");
-
-                    console.log("CNR:", logCNRData);
-                    console.log("NET:", logNETData);
-
                     buttonsReadyChartOptions(logChart, logCNRData, logNETData);
+                    display.write_line("Chart available to show");
                 })
                 .catch((error) => {
                     display.write_line("Error getting log data");
@@ -187,7 +184,7 @@ function buttonsInitChartOptions(logChart) {
     new_assign_button(
         2,
         () => {
-            if (logChart.logNumber > 1) {
+            if (logChart.logNumber > 0) {
                 logChart.logNumber -= 1;
                 display.pending_choice(
                     `Log number: ${logChart.logNumber}`,
