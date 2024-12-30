@@ -5,11 +5,55 @@ import {
 import { getDisplay2 } from "../dsiplay2/display2";
 import { sendWSMessage } from "../script";
 import Chart from "chart.js/auto";
+import zoomPlugin from "chartjs-plugin-zoom";
+
+Chart.register(zoomPlugin);
 
 class LogChart {
     constructor() {
         this.logList;
         this.logNumber = 0;
+        this.options = {
+            plugins: {
+                zoom: {
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                        },
+                        pinch: {
+                            enabled: true,
+                        },
+                        mode: "x",
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: "x",
+                    },
+                },
+            },
+            transitions: {
+                show: {
+                    animations: {
+                        x: {
+                            from: 0,
+                        },
+                        y: {
+                            from: 0,
+                        },
+                    },
+                },
+                hide: {
+                    animations: {
+                        x: {
+                            to: 0,
+                        },
+                        y: {
+                            to: 0,
+                        },
+                    },
+                },
+            },
+        };
     }
 }
 
@@ -34,6 +78,7 @@ export function spawn_chart() {
             logChart.logList = logList;
 
             display.write_line("Pick log to display");
+            display.write_line(" ");
             display.pending_choice("Log number: 0");
             buttonsInitChartOptions(logChart);
         })
@@ -117,7 +162,7 @@ function buttonsInitChartOptions(logChart) {
                     console.log("CNR:", logCNRData);
                     console.log("NET:", logNETData);
 
-                    buttonsReadyChartOptions(logCNRData, logNETData);
+                    buttonsReadyChartOptions(logChart, logCNRData, logNETData);
                 })
                 .catch((error) => {
                     display.write_line("Error getting log data");
@@ -154,21 +199,22 @@ function buttonsInitChartOptions(logChart) {
     );
 }
 
-function buttonsReadyChartOptions(logCNRData, logNETData) {
+function buttonsReadyChartOptions(logChart, logCNRData, logNETData) {
     new_assign_button(
         0,
         () => {
             createChartWindow(
-                logCNRData[0][1],
-                logCNRData[1][1],
-                logNETData[0][1]
+                logChart,
+                logCNRData[0][1], // Array of key: value pairs
+                logCNRData[1][1], // Array of key: value pairs
+                logNETData[0][1] // Object with key: value
             );
         },
         "show chart"
     );
 }
 
-function createChartWindow(cpuLog, ramLog, netLog) {
+function createChartWindow(logChart, cpuLog, ramLog, netLog) {
     let topContainer = document.getElementsByClassName("thatsAllFolks")[0];
 
     let chartWindow = document.createElement("div");
@@ -191,7 +237,8 @@ function createChartWindow(cpuLog, ramLog, netLog) {
 
     let chartTitle = document.createElement("div");
     chartTitle.id = "chartTitle";
-    chartTitle.textContent = "Log file 0";
+    console.log(logChart.logList);
+    chartTitle.textContent = logChart.logList[logChart.logNumber][1];
 
     chartWindow.appendChild(chartTitle);
 
@@ -206,16 +253,16 @@ function createChartWindow(cpuLog, ramLog, netLog) {
         chartContainer.className = "chartContainer";
         chartContainer.style.gridArea = data.id;
 
-        let chart = document.createElement("canvas");
-        chart.id = `chartCanvas${index}`;
-        chart.className = "chartCanvases";
-        chart.width = chartWindowWidth - 20;
-        chart.height = chartWindowHeight / 3 - 20;
-        chartContainer.appendChild(chart);
+        let chartCanvas = document.createElement("canvas");
+        chartCanvas.id = `chartCanvas${index}`;
+        chartCanvas.className = "chartCanvases";
+        chartCanvas.width = chartWindowWidth - 20;
+        chartCanvas.height = chartWindowHeight / 3 - 20;
+        chartContainer.appendChild(chartCanvas);
 
         chartWindow.appendChild(chartContainer);
 
-        data.chartFn(chart, data.log);
+        data.chartFn(logChart, chartCanvas, data.log);
     });
 }
 
@@ -226,17 +273,14 @@ function closeChartWindow() {
     display.write_line("Chart window closed.");
 }
 
-function getChart0(canvasElement, cpuLog) {
+function getChart0(logChart, canvasElement, cpuLog) {
     const ctx = canvasElement.getContext("2d");
 
     let labels = [];
     let logData = [];
 
     cpuLog.forEach((elem) => {
-        labels.push(elem.time_stamp);
-    });
-
-    cpuLog.forEach((elem) => {
+        labels.push(elem.time_stamp.split("T")[1]);
         logData.push(elem.value);
     });
 
@@ -250,8 +294,8 @@ function getChart0(canvasElement, cpuLog) {
                 fill: false,
                 lineTension: 0.1,
                 pointBackgroundColor: "rgba(75, 192, 192, 1)",
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                pointRadius: 1,
+                pointHoverRadius: 5,
             },
         ],
     };
@@ -259,38 +303,33 @@ function getChart0(canvasElement, cpuLog) {
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: {
-            transitions: {
-                show: {
-                    animations: {
-                        x: {
-                            from: 0,
-                        },
-                        y: {
-                            from: 0,
-                        },
-                    },
-                },
-            },
-        },
+        options: logChart.options,
     });
 }
 
-function getChart1(canvasElement, ramLog) {
+function getChart1(logChart, canvasElement, ramLog) {
     const ctx = canvasElement.getContext("2d");
 
+    let labels = [];
+    let logData = [];
+
+    ramLog.forEach((elem) => {
+        labels.push(elem.time_stamp.split("T")[1]);
+        logData.push(elem.value);
+    });
+
     let data = {
-        labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        labels: labels,
         datasets: [
             {
                 label: "Memory Usage (%)",
-                data: [50, 55, 60, 65, 70, 75, 80, 85, 90, 95],
+                data: logData,
                 borderColor: "rgba(153, 102, 255, 1)",
                 fill: false,
                 lineTension: 0.1,
                 pointBackgroundColor: "rgba(153, 102, 255, 1)",
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                pointRadius: 1,
+                pointHoverRadius: 5,
             },
         ],
     };
@@ -298,48 +337,49 @@ function getChart1(canvasElement, ramLog) {
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: {
-            transitions: {
-                show: {
-                    animations: {
-                        x: {
-                            from: 0,
-                        },
-                        y: {
-                            from: 0,
-                        },
-                    },
-                },
-            },
-        },
+        options: logChart.options,
     });
 }
 
-function getChart2(canvasElement, netLog) {
+function getChart2(logChart, canvasElement, netLog) {
     const ctx = canvasElement.getContext("2d");
 
+    let labels = [];
+
+    let downLogData = [];
+    let upLogData = [];
+
+    netLog.down.forEach((elem) => {
+        labels.push(elem.time_stamp.split("T")[1]);
+        downLogData.push(elem.value);
+    });
+
+    netLog.up.forEach((elem) => {
+        upLogData.push(elem.value);
+    });
+
     let data = {
-        labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        labels: labels,
         datasets: [
             {
-                label: "Network Down Usage (%)",
-                data: [0, 25, 70, 4, 12, 78, 70, 100, 9, 10],
+                label: "Network Received (KB)",
+                data: downLogData,
                 borderColor: "rgba(255, 159, 64, 1)",
                 fill: false,
                 lineTension: 0.1,
                 pointBackgroundColor: "rgba(255, 159, 64, 1)",
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                pointRadius: 1,
+                pointHoverRadius: 5,
             },
             {
-                label: "Network Up Usage (%)",
-                data: [10, 45, 15, 80, 0, 6, 70, 30, 90, 20],
+                label: "Network Transmitted (KB)",
+                data: upLogData,
                 borderColor: "rgba(64, 67, 255, 1)",
                 fill: false,
                 lineTension: 0.1,
                 pointBackgroundColor: "rgba(64, 67, 255, 1)",
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                pointRadius: 1,
+                pointHoverRadius: 5,
             },
         ],
     };
@@ -347,19 +387,6 @@ function getChart2(canvasElement, netLog) {
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: {
-            transitions: {
-                show: {
-                    animations: {
-                        x: {
-                            from: 0,
-                        },
-                        y: {
-                            from: 0,
-                        },
-                    },
-                },
-            },
-        },
+        options: logChart.options,
     });
 }

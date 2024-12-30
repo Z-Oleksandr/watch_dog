@@ -46,7 +46,8 @@ pub async fn log_stats(duration_in_hours: u64) {
             let stats: SystemStats = get_system_stats(&mut sys, &mut networks);
 
             // Add timestamp
-            let timestamp = chrono::Utc::now().to_rfc3339();
+            let timestamp = chrono::Utc::now()
+                .format("%Y-%m-%dT%H:%M:%S").to_string();
 
             // Append to JSON Object
             if let Some(cpu) = cnr_collected_data.get_mut("cpu") {
