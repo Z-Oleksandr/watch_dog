@@ -28,7 +28,7 @@ And that is basically it, **however** that is more of a test run. In order to fu
 5. Execute `npm install`
 6. Execute `npm run build`
 7. Start the app `pm2 start npm --name watch_dog -- run watch_dog`
-8. If you have firewall enabled, you need to allow access at port 9000 `ufw allow 9000`
+8. If you have firewall enabled, you need to allow access at port 9000 for the front_end and at port 8999 for the engine `ufw allow 9000 && ufw allow 8999`
 9. Now you can access the app from any device in your local network at `http://<server-private-ip>:9000`
 10. To have pm2 automatically run on system startup execute: `pm2 startup`
 
