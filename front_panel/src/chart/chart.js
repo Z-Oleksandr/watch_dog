@@ -70,17 +70,22 @@ export function spawn_chart() {
 
     get_log_list()
         .then((logList) => {
-            display.write_line("Log list:");
-            logList.forEach(([index, log]) => {
-                display.write_line(index + ": " + log);
-            });
+            if (logList && logList.length != 0) {
+                display.write_line("Log list:");
+                logList.forEach(([index, log]) => {
+                    display.write_line(index + ": " + log);
+                });
 
-            logChart.logList = logList;
+                logChart.logList = logList;
 
-            display.write_line("Pick log to display ( -1 to cancel )");
-            display.write_line(" ");
-            display.pending_choice("Log number: 0");
-            buttonsInitChartOptions(logChart);
+                display.write_line("Pick log to display ( -1 to cancel )");
+                display.write_line(" ");
+                display.pending_choice("Log number: 0");
+                buttonsInitChartOptions(logChart);
+            } else {
+                display.write_line("There are 0 logs currently");
+                display.write_line("Start new log function");
+            }
         })
         .catch((error) => {
             display.write_line("Error getting log list.");
@@ -407,16 +412,21 @@ export function show_latest_chart() {
     let logChart = new LogChart();
 
     get_log_list().then((logList) => {
-        logChart.logList = logList;
-        const latestLogIndex = logList.length - 1;
-        logChart.logNumber = latestLogIndex;
-        get_log_data(latestLogIndex).then(({ logCNRData, logNETData }) => {
-            createChartWindow(
-                logChart,
-                logCNRData[0][1],
-                logCNRData[1][1],
-                logNETData[0][1]
-            );
-        });
+        if (logList && logList.length != 0) {
+            logChart.logList = logList;
+            const latestLogIndex = logList.length - 1;
+            logChart.logNumber = latestLogIndex;
+            get_log_data(latestLogIndex).then(({ logCNRData, logNETData }) => {
+                createChartWindow(
+                    logChart,
+                    logCNRData[0][1],
+                    logCNRData[1][1],
+                    logNETData[0][1]
+                );
+            });
+        } else {
+            display.write_line("There are 0 logs currently");
+            display.write_line("Start new log function");
+        }
     });
 }

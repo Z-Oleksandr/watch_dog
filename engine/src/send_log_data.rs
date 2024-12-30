@@ -13,6 +13,8 @@ use tokio_tungstenite::{
 use serde::{Serialize, Deserialize};
 use futures::{SinkExt, stream::SplitSink};
 
+use crate::helpers::ensure_dir;
+
 #[derive(Serialize, Deserialize)]
 struct CpuData {
     time_stamp: String,
@@ -54,6 +56,10 @@ pub async fn send_log_data(
     log_list: Arc<Mutex<HashMap<u32, String>>>
 ) {
     let log_dir = "../logs/";
+    match ensure_dir(&log_dir) {
+        Ok(_) => {},
+        Err(e) => println!("Something wrong with the log dir: {}", e),
+    };
 
     let log_list = log_list.lock().await;
 

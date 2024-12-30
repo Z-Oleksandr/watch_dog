@@ -5,8 +5,14 @@ use chrono;
 use sysinfo::{System, Networks};
 
 use crate::system_stats::{SystemStats, get_system_stats};
+use crate::helpers::ensure_dir;
 
 pub async fn log_stats(duration_in_hours: u64) {
+    match ensure_dir("../logs/") {
+        Ok(_) => {},
+        Err(e) => println!("Something wrong with the log dir: {}", e),
+    };
+
     println!("Starting log process");
     println!("Duration: {} hours", &duration_in_hours);
     // Start time and file name

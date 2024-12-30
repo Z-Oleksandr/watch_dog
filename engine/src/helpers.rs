@@ -1,4 +1,10 @@
-use std::{ffi::OsStr, collections::HashSet, path::Path};
+use std::{
+    ffi::OsStr, 
+    collections::HashSet, 
+    path::Path, 
+    fs, 
+    io
+};
 
 // For linux we need to filter non-physical drives
 pub fn is_not_pidor(disk_name: &OsStr, disk_register: &mut HashSet<String>) -> bool {
@@ -40,4 +46,12 @@ pub fn is_initialized_disk(
         return true
     }
     false
+}
+
+pub fn ensure_dir(dir: &str) -> io::Result<()> {
+    let path = Path::new(dir);
+    if !path.exists() {
+        fs::create_dir(path)?;
+    }
+    Ok(())
 }

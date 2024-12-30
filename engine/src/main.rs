@@ -17,6 +17,7 @@ use futures::{StreamExt, SinkExt, stream::{SplitStream, SplitSink}};
 use walkdir::WalkDir;
 
 mod helpers;
+use helpers::ensure_dir;
 
 mod system_info;
 use system_info::{get_system_data, get_system_info};
@@ -100,6 +101,10 @@ async fn send_log_list(
     log_list: Arc<Mutex<HashMap<u32, String>>>
 ) {
     let log_dir = "../logs/";
+    match ensure_dir(&log_dir) {
+        Ok(_) => {},
+        Err(e) => println!("Something wrong with the log dir: {}", e),
+    };
 
     let mut new_log_list: HashMap<u32, String> = HashMap::new();
     let mut index = 0;
