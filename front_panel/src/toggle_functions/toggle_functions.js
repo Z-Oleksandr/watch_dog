@@ -50,16 +50,16 @@ export function assign_toggle_1() {
                     new_assign_button(
                         1,
                         () => {
-                            display2.write_line("Nothing here for now");
+                            display2.scrollUp();
                         },
-                        "button 1"
+                        "scroll up"
                     );
                     new_assign_button(
                         2,
                         () => {
-                            display2.write_line("Nothing here for now");
+                            display2.scrollDown();
                         },
-                        "button 2"
+                        "scroll down"
                     );
                 }
             },

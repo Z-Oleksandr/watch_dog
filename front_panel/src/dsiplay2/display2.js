@@ -1,4 +1,5 @@
 import { isMobile } from "../script";
+import { Buffer } from "./buffer";
 
 const displayContainer = document.getElementsByClassName("display_2")[0];
 const displayHeight = displayContainer.clientHeight;
@@ -12,11 +13,11 @@ export class Display2 {
         this.row_count;
         if (!isMobile()) {
             this.fontSize = "14px";
-            console.log("Lines: " + Math.floor(displayHeight / (1.69 * 14)));
-            this.row_count = Math.floor(displayHeight / (1.69 * 14));
+            console.log("Lines: " + Math.floor(displayHeight / (1.65 * 14)));
+            this.row_count = Math.floor(displayHeight / (1.65 * 14));
         } else {
             this.fontSize = "9px";
-            this.row_count = Math.floor(displayHeight / (1.69 * 9));
+            this.row_count = Math.floor(displayHeight / (1.65 * 9));
         }
         for (let i = 0; i < this.row_count; i++) {
             this[`row${i}`] = this.create_p(display);
@@ -25,6 +26,7 @@ export class Display2 {
         this.terminalWriting = false;
         this.terminalPending = false;
         this.textQueue = [];
+        this.buffer = new Buffer(this);
     }
 
     create_p(display) {
@@ -50,8 +52,23 @@ export class Display2 {
         }
     }
 
+    render(lines) {
+        this.clear_terminal();
+        if (lines.length <= this.row_count) {
+            for (let i = 0; i < lines.length; i++) {
+                this[`row${i}`].textContent = lines[i];
+            }
+            this.current = lines.length;
+        }
+    }
+
     write_line(text) {
         if (text.length <= 80) {
+            const atBusinessEnd = this.buffer.backToBusiness();
+            if (atBusinessEnd != -1) {
+                this.render(atBusinessEnd);
+            }
+            this.buffer.addLine(text);
             if (this.current < this.row_count) {
                 const currentRow = this[`row${this.current}`];
                 this.terminal_animation(text, currentRow);
@@ -77,6 +94,21 @@ export class Display2 {
             setTimeout(() => {
                 this.write_line(text.slice(40));
             }, 500);
+        }
+    }
+
+    scrollUp() {
+        const toDisplay = this.buffer.oneUp();
+        console.log(toDisplay);
+        if (toDisplay != -1) {
+            this.render(toDisplay);
+        }
+    }
+
+    scrollDown() {
+        const toDisplay = this.buffer.oneDown();
+        if (toDisplay != -1) {
+            this.render(toDisplay);
         }
     }
 
