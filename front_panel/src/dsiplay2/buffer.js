@@ -34,32 +34,32 @@ export class Buffer {
             this.visibleRows.start -= 1;
             this.visibleRows.end -= 1;
             this.scrolling = true;
-            let rowsToShow = [];
-            for (let i = 0; i < this.displayedRows; i++) {
-                rowsToShow.push(this.array[this.visibleRows.start + i]);
-            }
-            return rowsToShow;
+            return this._getRowsToShow();
         } else {
             return -1;
         }
     }
 
     oneDown() {
-        if (this.visibleRows.end < this.array.length - 1) {
+        if (this.visibleRows.end < this.array.length) {
             this.visibleRows.start += 1;
             this.visibleRows.end += 1;
-            if (this.visibleRows.end == this.array.length - 1) {
+            if (this.visibleRows.end == this.array.length) {
                 this.scrolling = false;
             }
-            let rowsToShow = [];
-            for (let i = 0; i < this.displayedRows; i++) {
-                rowsToShow.push(this.array[this.visibleRows.start + i]);
-            }
-            return rowsToShow;
+            return this._getRowsToShow();
         } else {
             this.scrolling = false;
             return -1;
         }
+    }
+
+    _getRowsToShow() {
+        let rowsToShow = [];
+        for (let i = 0; i < this.displayedRows; i++) {
+            rowsToShow.push(this.array[this.visibleRows.start + i]);
+        }
+        return rowsToShow;
     }
 
     empty() {
@@ -73,9 +73,10 @@ export class Buffer {
 
     backToBusiness() {
         if (this.scrolling) {
-            this.visibleRows.end = this.array.length - 1;
+            this.visibleRows.end = this.array.length;
             this.visibleRows.start = this.visibleRows.end - this.displayedRows;
             let rowsToShow = [];
+            const limit = this.visibleRows.end - this.visibleRows.start;
             for (let i = 0; i < this.displayedRows; i++) {
                 rowsToShow.push(this.array[this.visibleRows.start + i]);
             }

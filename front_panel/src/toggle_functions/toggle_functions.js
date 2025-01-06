@@ -33,7 +33,6 @@ export function assign_toggle_1() {
             () => {
                 if (toggle_switches[0].state) {
                     toggle_switches[0].toggle().then(() => {
-                        display2.write_line("Enable extra buttons");
                         extraButtons();
                     });
                 } else {

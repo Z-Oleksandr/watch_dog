@@ -64,6 +64,8 @@ let logCNRData;
 let logNETData;
 
 export function spawn_chart() {
+    console.log("spawn_chart called");
+
     display.write_line("Getting the log list...");
 
     let logChart = new LogChart();
@@ -73,6 +75,7 @@ export function spawn_chart() {
             if (logList && logList.length != 0) {
                 display.write_line("Log list:");
                 logList.forEach(([index, log]) => {
+                    console.log(index + ": " + log);
                     display.write_line(index + ": " + log);
                 });
 
@@ -95,9 +98,11 @@ export function spawn_chart() {
 
 export function update_log_list(newLogList) {
     logList = Object.entries(newLogList);
+    console.log("logList updated:", logList);
 }
 
 function get_log_list() {
+    console.log("get_log_list called");
     logList = null;
 
     sendWSMessage("get_log_list", 0);
@@ -107,12 +112,21 @@ function get_log_list() {
         const timeout = 5000;
         const startTime = Date.now();
 
+        let isChecking = false;
+
         const checkLogList = () => {
+            console.log("checkLogList called at", Date.now());
+            if (isChecking) return;
+            isChecking = true;
+
             if (logList) {
+                isChecking = false;
                 res(logList);
             } else if (Date.now() - startTime > timeout) {
+                isChecking = false;
                 rej(new Error("Timeout waiting for log list"));
             } else {
+                isChecking = false;
                 setTimeout(checkLogList, interval);
             }
         };

@@ -27,6 +27,8 @@ export class Display2 {
         this.terminalPending = false;
         this.textQueue = [];
         this.buffer = new Buffer(this);
+        this.activeRecursiveCalls = 0;
+        this.MAX_RECURSIVE_CALLS = 50;
     }
 
     create_p(display) {
@@ -53,16 +55,27 @@ export class Display2 {
     }
 
     render(lines) {
-        this.clear_terminal();
+        // Clear terminal without resetting current
+        for (let i = 0; i < this.row_count; i++) {
+            this[`row${i}`].textContent = "";
+        }
+
+        // Render
         if (lines.length <= this.row_count) {
             for (let i = 0; i < lines.length; i++) {
                 this[`row${i}`].textContent = lines[i];
             }
-            this.current = lines.length;
         }
     }
 
     write_line(text) {
+        if (this.activeRecursiveCalls >= this.MAX_RECURSIVE_CALLS) {
+            console.error(
+                "Max recursion depth reached in display 2 write_line!"
+            );
+            console.log("Clear D2 to reset.");
+            return;
+        }
         if (text.length <= 80) {
             const atBusinessEnd = this.buffer.backToBusiness();
             if (atBusinessEnd != -1) {
@@ -73,25 +86,21 @@ export class Display2 {
                 const currentRow = this[`row${this.current}`];
                 this.terminal_animation(text, currentRow);
             } else {
-                const currentRow = this[`row${this.row_count - 1}`];
-                let holdThis1 = currentRow.textContent;
-                let holdThis2;
-                for (let i = 5; i >= 0; i--) {
-                    if (i % 2 !== 0) {
-                        holdThis2 = this[`row${i}`].textContent;
-                        this[`row${i}`].textContent = holdThis1;
-                        if (i != 0) {
-                            holdThis1 = this[`row${i - 1}`].textContent;
-                        }
-                    } else {
-                        this[`row${i}`].textContent = holdThis2;
-                    }
+                // Shift all rows up one, ignore last one and add new one
+                for (let i = 0; i < this.row_count - 1; i++) {
+                    this[`row${i}`].textContent =
+                        this[`row${i + 1}`].textContent;
                 }
+
+                const currentRow = this[`row${this.row_count - 1}`];
                 this.terminal_animation(text, currentRow);
             }
+            this.activeRecursiveCalls--;
         } else {
+            this.activeRecursiveCalls++;
             this.write_line(text.slice(0, 40));
             setTimeout(() => {
+                this.activeRecursiveCalls++;
                 this.write_line(text.slice(40));
             }, 500);
         }
@@ -99,7 +108,6 @@ export class Display2 {
 
     scrollUp() {
         const toDisplay = this.buffer.oneUp();
-        console.log(toDisplay);
         if (toDisplay != -1) {
             this.render(toDisplay);
         }
@@ -145,12 +153,15 @@ export class Display2 {
             this[`row${i}`].textContent = "";
         }
         this.current = 0;
+        this.activeRecursiveCalls = 0;
+        this.buffer.empty();
     }
 
     checkTextQueue() {
         if (this.textQueue.length != 0) {
             this.write_line(this.textQueue[0]);
             this.textQueue.shift();
+            this.checkTextQueue();
         }
     }
 

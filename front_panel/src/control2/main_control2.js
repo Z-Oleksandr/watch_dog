@@ -49,7 +49,13 @@ window.addEventListener("touchend", handleClick);
 
 // const controls = new OrbitControls(camera, renderer.domElement);
 
-window.addEventListener("resize", onWindowResize, false);
+window.addEventListener(
+    "resize",
+    () => {
+        onWindowResize;
+    },
+    false
+);
 function onWindowResize() {
     const width = control2_window.clientWidth;
     const height = control2_window.clientHeight;
