@@ -37,6 +37,9 @@ export class Display2 {
     init_message() {
         setTimeout(() => {
             this.initialSetupState = false;
+            this.write_line("WARNING!");
+            this.write_line("This version of watch_dog is outdated!");
+            this.write_line("Please checkout github for new version.");
             this.write_line("Display 2 initialized.");
         }, 5001);
     }
