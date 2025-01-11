@@ -66,3 +66,7 @@ That's it - a visual representation of the chosen log will be displayed.
 2. Press `latest log` button
 
 That's it - a visual representation of the latest log will be displayed.
+
+### Scrolling
+
+-   Display2 can be scrolled using mouse wheel or by touch. Additionaly under `ext buttons` scrolling with buttons can be enabled.
