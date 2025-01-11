@@ -24,7 +24,9 @@ export class Buffer {
                 this.visibleRows.end += 1;
             }
         } else {
-            this.array.shift();
+            while (this.array.length >= this.arrayLimit) {
+                this.array.shift();
+            }
             this.array.push(text);
         }
     }

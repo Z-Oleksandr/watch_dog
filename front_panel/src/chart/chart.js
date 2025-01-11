@@ -3,6 +3,7 @@ import {
     default_buttons,
 } from "../button_functions/button_functions";
 import { getDisplay2 } from "../dsiplay2/display2";
+import { displayLogList } from "../dsiplay2/display_helpers";
 import { sendWSMessage } from "../script";
 import Chart from "chart.js/auto";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -73,18 +74,11 @@ export function spawn_chart() {
     get_log_list()
         .then((logList) => {
             if (logList && logList.length != 0) {
-                display.write_line("Log list:");
-                logList.forEach(([index, log]) => {
-                    console.log(index + ": " + log);
-                    display.write_line(index + ": " + log);
+                displayLogList(logList).then(() => {
+                    logChart.logList = logList;
+                    display.pending_choice("Log number: 0");
+                    buttonsInitChartOptions(logChart);
                 });
-
-                logChart.logList = logList;
-
-                display.write_line("Pick log to display ( -1 to cancel )");
-                display.write_line(" ");
-                display.pending_choice("Log number: 0");
-                buttonsInitChartOptions(logChart);
             } else {
                 display.write_line("There are 0 logs currently");
                 display.write_line("Start new log function");
