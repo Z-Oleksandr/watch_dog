@@ -25,15 +25,36 @@ export async function displayLogList(logList) {
 displayContainer.addEventListener("wheel", (event) => {
     event.preventDefault();
 
-    console.log("Dleta:", event.deltaY);
     scrollOffset += event.deltaY;
 
     const linesScrolled = Math.floor(scrollOffset / lineHeight);
 
     if (linesScrolled != 0) {
         onDisplayScroll(linesScrolled);
-        console.log("Lines scrolled:", linesScrolled);
         scrollOffset -= linesScrolled * lineHeight;
+    }
+});
+
+let touchStartY = 0;
+let touchOffset = 0;
+
+displayContainer.addEventListener("touchstart", (event) => {
+    touchStartY = event.touches[0].clientY;
+});
+
+displayContainer.addEventListener("touchmove", (event) => {
+    event.preventDefault();
+
+    const touchDeltaY = touchStartY - event.touches[0].clientY;
+    touchStartY = event.touches[0].clientY;
+
+    touchOffset += touchDeltaY;
+    const linesScrolled = Math.floor(touchOffset / lineHeight);
+
+    if (linesScrolled !== 0) {
+        onDisplayScroll(linesScrolled);
+
+        touchOffset -= linesScrolled * lineHeight;
     }
 });
 
