@@ -3,6 +3,7 @@ import {
     default_buttons,
 } from "../button_functions/button_functions";
 import { getDisplay2 } from "../dsiplay2/display2";
+import { displayLogList } from "../dsiplay2/display_helpers";
 import { sendWSMessage } from "../script";
 import Chart from "chart.js/auto";
 import zoomPlugin from "chartjs-plugin-zoom";
@@ -64,6 +65,8 @@ let logCNRData;
 let logNETData;
 
 export function spawn_chart() {
+    console.log("spawn_chart called");
+
     display.write_line("Getting the log list...");
 
     let logChart = new LogChart();
@@ -71,17 +74,11 @@ export function spawn_chart() {
     get_log_list()
         .then((logList) => {
             if (logList && logList.length != 0) {
-                display.write_line("Log list:");
-                logList.forEach(([index, log]) => {
-                    display.write_line(index + ": " + log);
+                displayLogList(logList).then(() => {
+                    logChart.logList = logList;
+                    display.pending_choice("Log number: 0");
+                    buttonsInitChartOptions(logChart);
                 });
-
-                logChart.logList = logList;
-
-                display.write_line("Pick log to display ( -1 to cancel )");
-                display.write_line(" ");
-                display.pending_choice("Log number: 0");
-                buttonsInitChartOptions(logChart);
             } else {
                 display.write_line("There are 0 logs currently");
                 display.write_line("Start new log function");
@@ -95,9 +92,11 @@ export function spawn_chart() {
 
 export function update_log_list(newLogList) {
     logList = Object.entries(newLogList);
+    console.log("logList updated:", logList);
 }
 
 function get_log_list() {
+    console.log("get_log_list called");
     logList = null;
 
     sendWSMessage("get_log_list", 0);
@@ -107,12 +106,21 @@ function get_log_list() {
         const timeout = 5000;
         const startTime = Date.now();
 
+        let isChecking = false;
+
         const checkLogList = () => {
+            console.log("checkLogList called at", Date.now());
+            if (isChecking) return;
+            isChecking = true;
+
             if (logList) {
+                isChecking = false;
                 res(logList);
             } else if (Date.now() - startTime > timeout) {
+                isChecking = false;
                 rej(new Error("Timeout waiting for log list"));
             } else {
+                isChecking = false;
                 setTimeout(checkLogList, interval);
             }
         };
