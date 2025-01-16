@@ -503,7 +503,11 @@ export function server_communication(ws) {
         }
 
         if (data_stream.data_type == 4) {
-            update_log_data(data_stream.cnr_data, data_stream.net_data);
+            update_log_data(
+                data_stream.cnr_data,
+                data_stream.net_data,
+                ram_gauge.maxValue * 1000
+            );
         }
     };
 }
