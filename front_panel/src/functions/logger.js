@@ -13,7 +13,6 @@ class LoggerStartRequest {
 }
 
 export function start_logger() {
-    display.clear_terminal();
     display.write_line("Set time period for which you want to record logs:");
     let logStartRequest = new LoggerStartRequest("start_log", 1);
     setTimeout(() => display.pending_choice("Hours: 1", false), 500);
