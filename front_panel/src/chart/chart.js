@@ -62,6 +62,7 @@ let display = getDisplay2();
 
 let logList;
 let logCNRData;
+let ramMax;
 let logNETData;
 
 export function spawn_chart() {
@@ -129,9 +130,10 @@ function get_log_list() {
     });
 }
 
-export function update_log_data(newCNRData, newNETData) {
+export function update_log_data(newCNRData, newNETData, newRamMax) {
     logCNRData = Object.entries(newCNRData);
     logNETData = Object.entries(newNETData);
+    ramMax = newRamMax;
 }
 
 function get_log_data(logFileNumber) {
@@ -323,10 +325,20 @@ function getChart0(logChart, canvasElement, cpuLog) {
         ],
     };
 
+    const options = {
+        ...logChart.options,
+        scales: {
+            y: {
+                min: 0,
+                max: 100,
+            },
+        },
+    };
+
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: logChart.options,
+        options: options,
     });
 }
 
@@ -345,7 +357,7 @@ function getChart1(logChart, canvasElement, ramLog) {
         labels: labels,
         datasets: [
             {
-                label: "Memory Usage (GB)",
+                label: "Memory Usage (MB)",
                 data: logData,
                 borderColor: "rgba(153, 102, 255, 1)",
                 fill: false,
@@ -357,10 +369,20 @@ function getChart1(logChart, canvasElement, ramLog) {
         ],
     };
 
+    const options = {
+        ...logChart.options,
+        scales: {
+            y: {
+                min: 0,
+                max: ramMax,
+            },
+        },
+    };
+
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: logChart.options,
+        options: options,
     });
 }
 
