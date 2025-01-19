@@ -24,6 +24,66 @@ body {
     overflow-y: hidden;
 }
 
+#demoButtons {
+    position: absolute;
+    left: 7px;
+    bottom: 17px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#exitWD {
+    margin: 3px;
+    background: none;
+    border: 2px solid white;
+    border-radius: 5px;
+    height: 4vh;
+    width: 6vw;
+    min-width: 50px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+#exitWD:hover {
+    border: 4px solid white;
+    cursor: pointer;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.69);
+}
+
+#gitLink {
+    margin: 3px;
+    background: none;
+    border: 2px solid white;
+    border-radius: 5px;
+    height: 4vh;
+    width: 6vw;
+    min-width: 50px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+#gitLink:hover {
+    border: 4px solid white;
+    cursor: pointer;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.69);
+}
+
+.returnText {
+    color: white;
+    padding: 5px;
+    text-decoration: none;
+}
+
 .thatsAllFolks {
     display: flex;
     justify-content: center;

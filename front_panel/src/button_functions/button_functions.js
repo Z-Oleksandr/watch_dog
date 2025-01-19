@@ -18,7 +18,7 @@ export async function reconnectWS() {
         zero_gauges();
         isWSConnected(ws);
         setTimeout(() => {
-            ws = new WebSocket(`ws://${window.location.hostname}:8999`);
+            ws = new WebSocket(`https://${window.location.hostname}/wss`);
             resetWS(ws);
         }, 2000);
     } else {

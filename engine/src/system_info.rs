@@ -1,14 +1,7 @@
 use std::{collections::HashSet, sync::Mutex};
-
-use sysinfo::{
-    Disks, Networks,
-    System
-};
 use serde::Serialize;
 
-use lazy_static::lazy_static;
-
-use crate::helpers::{is_initialized_disk, is_not_pidor};
+use crate::demo_system::DemoSystem;
 
 #[derive(Serialize)]
 pub struct SystemData {
@@ -30,72 +23,28 @@ pub struct SystemInfo {
     uptime: u64,
 }
 
-lazy_static! {
-    pub static ref DISK_REGISTER: Mutex<HashSet<String>> = Mutex::new(HashSet::new());
-}
-
 pub fn get_system_data() -> SystemData {
-    let mut sys = System::new_all();
-
-    // Get disk data
-    let disks = Disks::new_with_refreshed_list();
-
-    {
-        DISK_REGISTER.lock().unwrap().clear();
-    }
-
-    let (disks_space, disk_count) = {
-        let mut disks_space = Vec::new();
-        let mut disk_count: u32 = 0;
-
-        let mut disk_register = DISK_REGISTER.lock().unwrap();
-
-        for disk in disks.list() {
-            // For linux we need to filter non-physical drives
-            if is_not_pidor(disk.name(), &mut disk_register) {
-                disks_space.push(disk.total_space() / 1_000_000_000);
-                disk_count += 1;
-            }
-        }
-
-        (disks_space, disk_count)
-    };
+    let demo_sys = DemoSystem::new();
 
     return SystemData {
         data_type: 0,
-        num_cpus: sys.cpus().len(),
-        num_disks: disk_count,
-        disks_space,
-        init_ram_total: sys.total_memory() / 1_000_000,
+        num_cpus: demo_sys.num_cpus(),
+        num_disks: demo_sys.num_disks(),
+        disks_space: demo_sys.disks_total_space(),
+        init_ram_total: demo_sys.total_memory()
     }
 }
 
 pub fn get_system_info() -> SystemInfo {
-    let system_name = System::name()
-        .unwrap_or("System name not found".to_string());
-
-    let kernel_version = System::kernel_version()
-        .unwrap_or("Kernel version not found".to_string());
-
-    let cpu_arch = System::cpu_arch()
-        .unwrap_or("Unknown CPU architechture".to_string());
-
-    let os_version = System::os_version()
-        .unwrap_or("Unknown OS version".to_string());
-
-    let host_name = System::host_name()
-        .unwrap_or("Host name not found".to_string());
-
-    let uptime = System::uptime();
+    let demo_sys = DemoSystem::new();
 
     return SystemInfo {
         data_type: 2,
-        system_name,
-        kernel_version,
-        cpu_arch,
-        os_version,
-        host_name,
-        uptime
+        system_name: demo_sys.system_name,
+        kernel_version: demo_sys.kernel_version,
+        cpu_arch: demo_sys.cpu_arch,
+        os_version: demo_sys.os_version,
+        host_name: demo_sys.host_name,
+        uptime: demo_sys.uptime
     }
 }
-

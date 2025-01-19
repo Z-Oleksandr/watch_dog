@@ -7,9 +7,11 @@ import {
     zero_gauges,
 } from "./server_connection/server_connection";
 
-let ws = new WebSocket(`ws://${window.location.hostname}:8999`);
+// let ws = new WebSocket(`https://${window.location.hostname}/wss`);
 
-let connectionAt = `ws://${window.location.hostname}:8999`;
+let ws = new WebSocket("ws://localhost:8998");
+
+let connectionAt = `https://${window.location.hostname}/wss`;
 console.log("WS connection at: " + connectionAt);
 
 export function isMobile() {
@@ -68,7 +70,11 @@ export function isWSConnected(ws) {
     } else {
         if (indicators[2].state == false && !display2.initialSetupState) {
             display2.write_line("WebSocket connection closed");
-            zero_gauges();
+            try {
+                zero_gauges();
+            } catch {
+                console.log("Gauges were not yet initialised");
+            }
         }
         indicators[0].off();
         indicators[2].on();
@@ -92,4 +98,6 @@ ws.onopen = function () {
 
 ws.onerror = function (error) {
     console.error("WebSocket error: ", error);
+    display2.write_line("Websocket connection error.");
+    display2.write_line("Try to reset Websocket.");
 };
