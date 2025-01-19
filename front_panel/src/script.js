@@ -7,7 +7,9 @@ import {
     zero_gauges,
 } from "./server_connection/server_connection";
 
-let ws = new WebSocket(`https://${window.location.hostname}/wss`);
+// let ws = new WebSocket(`https://${window.location.hostname}/wss`);
+
+let ws = new WebSocket("ws://localhost:8998");
 
 let connectionAt = `https://${window.location.hostname}/wss`;
 console.log("WS connection at: " + connectionAt);
@@ -29,6 +31,19 @@ export function getWS() {
             rej("WebSocket not yet initialized.");
         }
     });
+}
+
+export function sendWSMessage(type, message) {
+    try {
+        ws.send(
+            JSON.stringify({
+                type: type.toString(),
+                message: message,
+            })
+        );
+    } catch (err) {
+        display2.write_line("Message send failed: " + err);
+    }
 }
 
 export function resetWS(newWS) {

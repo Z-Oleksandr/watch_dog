@@ -19,10 +19,15 @@ import {
 } from "./indicator";
 import { isWSConnected, getWS } from "../script";
 import {
+    assign_button_0,
     assign_button_1,
     assign_button_2,
 } from "../button_functions/button_functions";
-import { assign_toggle_2 } from "../toggle_functions/toggle_functions";
+import {
+    assign_toggle_0,
+    assign_toggle_1,
+    assign_toggle_2,
+} from "../toggle_functions/toggle_functions";
 
 const control2_window = document.getElementsByClassName("control2")[0];
 
@@ -44,7 +49,13 @@ window.addEventListener("touchend", handleClick);
 
 // const controls = new OrbitControls(camera, renderer.domElement);
 
-window.addEventListener("resize", onWindowResize, false);
+window.addEventListener(
+    "resize",
+    () => {
+        onWindowResize;
+    },
+    false
+);
 function onWindowResize() {
     const width = control2_window.clientWidth;
     const height = control2_window.clientHeight;
@@ -254,21 +265,19 @@ async function loadIndicators() {
     }
 }
 
-let modelLoadState = [false, false, false];
-
 loadToggleModels().then(() => {
-	assign_toggle_2();
-    modelLoadState[0] = true;
+    assign_toggle_0();
+    assign_toggle_1();
+    assign_toggle_2();
 });
 
 loadButtons().then(() => {
-    modelLoadState[1] = true;
+    assign_button_0();
     assign_button_1();
     assign_button_2();
 });
 
 loadIndicators().then(() => {
-    modelLoadState[2] = true;
     isWSConnected(getWS());
 });
 
@@ -368,24 +377,6 @@ function render(delta) {
 
 const cover = document.getElementsByClassName("cover")[0];
 
-let modelLoadInterval = setInterval(() => {
-    if (checkModelLoadState) {
-        setTimeout(() => {
-            cover.style.transform = "translateY(-100%)";
-        }, 4000);
-        clearInterval(modelLoadInterval);
-    }
-});
-
-function checkModelLoadState() {
-    let checkSum = 0;
-    for (let i = 0; i < 3; i++) {
-        if (modelLoadState[i]) {
-            checkSum += 1;
-        }
-    }
-    if (checkSum == 3) {
-        return true;
-    }
-    return false;
-}
+setTimeout(() => {
+    cover.style.transform = "translateY(-100%)";
+}, 5000);
