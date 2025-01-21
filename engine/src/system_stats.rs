@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::demo_system::DemoSystem;
+use crate::demo_system::{DemoSystem, get_demo_system};
 
 #[derive(Serialize)]
 pub struct SystemStats {
@@ -15,7 +15,9 @@ pub struct SystemStats {
 }
 
 pub fn get_system_stats(loop_counter: u64) -> SystemStats {
-    let mut demo_sys = DemoSystem::new();
+    let demo_sys = get_demo_system();
+
+    let mut demo_sys = demo_sys.lock().expect("Failed to lock DemoSystem");
 
     let cpu_usage = demo_sys.cpu_usage();
 
@@ -28,6 +30,9 @@ pub fn get_system_stats(loop_counter: u64) -> SystemStats {
     let network_transmitted = demo_sys.data_transmitted() / 1000;
 
     let uptime = demo_sys.uptime + loop_counter;
+
+    println!("Ram raw value: {}", demo_sys.total_memory());
+    println!("Ram value: {}", ram_used);
 
     return SystemStats {
         data_type: 1,

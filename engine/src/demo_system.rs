@@ -1,5 +1,6 @@
 use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 use rand::Rng;
+use std::sync::{Arc, Mutex, OnceLock};
 
 pub struct DemoSystem {
     rng: ChaCha20Rng,
@@ -13,6 +14,16 @@ pub struct DemoSystem {
     num_disks: u32,
     disks_total_space: Vec<u64>,
     total_memory: u64,
+}
+
+pub static DEMO_SYSTEM: OnceLock<Arc<Mutex<DemoSystem>>> = OnceLock::new();
+
+pub fn init_demo_system() {
+    DEMO_SYSTEM.set(Arc::new(Mutex::new(DemoSystem::new()))).ok();
+}
+
+pub fn get_demo_system() -> Arc<Mutex<DemoSystem>> {
+    DEMO_SYSTEM.get().expect("DemoSystem not initialized").clone();
 }
 
 impl DemoSystem {
@@ -57,7 +68,7 @@ impl DemoSystem {
     }
 
     pub fn used_memory(&self) -> u64 {
-        self.total_memory * 0.42 as u64
+        self.total_memory / 2
     }
 
     pub fn num_disks(&self) -> u32 {

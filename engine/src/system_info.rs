@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::Mutex};
 use serde::Serialize;
 
-use crate::demo_system::DemoSystem;
+use crate::demo_system::{DemoSystem, get_demo_system};
 
 #[derive(Serialize)]
 pub struct SystemData {
@@ -24,27 +24,31 @@ pub struct SystemInfo {
 }
 
 pub fn get_system_data() -> SystemData {
-    let demo_sys = DemoSystem::new();
+    let demo_sys = get_demo_system();
+
+    let mut demo_sys = demo_sys.lock().expect("Failed to lock DemoSystem");
 
     return SystemData {
         data_type: 0,
         num_cpus: demo_sys.num_cpus(),
         num_disks: demo_sys.num_disks(),
         disks_space: demo_sys.disks_total_space(),
-        init_ram_total: demo_sys.total_memory()
+        init_ram_total: demo_sys.total_memory() / 1_000_000
     }
 }
 
 pub fn get_system_info() -> SystemInfo {
-    let demo_sys = DemoSystem::new();
+    let demo_sys = get_demo_system();
+
+    let mut demo_sys = demo_sys.lock().expect("Failed to lock DemoSystem");
 
     return SystemInfo {
         data_type: 2,
-        system_name: demo_sys.system_name,
-        kernel_version: demo_sys.kernel_version,
-        cpu_arch: demo_sys.cpu_arch,
-        os_version: demo_sys.os_version,
-        host_name: demo_sys.host_name,
+        system_name: demo_sys.system_name.clone(),
+        kernel_version: demo_sys.kernel_version.clone(),
+        cpu_arch: demo_sys.cpu_arch.clone(),
+        os_version: demo_sys.os_version.clone(),
+        host_name: demo_sys.host_name.clone(),
         uptime: demo_sys.uptime
     }
 }

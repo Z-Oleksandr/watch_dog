@@ -25,24 +25,16 @@ use system_info::{get_system_data, get_system_info};
 mod system_stats;
 use system_stats::get_system_stats;
 
-<<<<<<< HEAD
-mod logger;
-use logger::log_stats;
-
-mod send_log_data;
-use send_log_data::send_log_data;
-
-=======
 mod send_log_data;
 use send_log_data::send_log_data;
 
 mod demo_system;
+use demo_system::init_demo_system;
 
 // Randomness
 use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 use rand::Rng;
 
->>>>>>> 9048ba2c580fedcd633f2d993d78de8fa070c102
 #[derive(Deserialize, Debug)]
 struct IncomingMessage {
     r#type: String,
@@ -104,13 +96,8 @@ async fn handle_read(
     }
 }
 
-<<<<<<< HEAD
-fn start_log(time: u64) {
-    tokio::spawn(log_stats(time));
-=======
 fn start_log(_time: u64) {
     println!("Pretend to start log");
->>>>>>> 9048ba2c580fedcd633f2d993d78de8fa070c102
 }
 
 async fn send_log_list(
@@ -214,19 +201,6 @@ async fn handle_connection(
             .await
             .expect("Error sending system info");
     }
-<<<<<<< HEAD
-
-    time::sleep(Duration::from_secs(5)).await;
-
-    let mut sys = System::new_all();
-    let mut networks = Networks::new_with_refreshed_list();
-
-    // Live System Stats stream
-    loop {
-        // Serialize stats to JSON
-        let stats_json = serde_json::to_string(
-            &get_system_stats(&mut sys, &mut networks)
-=======
 
     // Live System Stats stream
     let mut loop_counter: u64 = 0;
@@ -234,7 +208,6 @@ async fn handle_connection(
         // Serialize stats to JSON
         let stats_json = serde_json::to_string(
             &get_system_stats(loop_counter)
->>>>>>> 9048ba2c580fedcd633f2d993d78de8fa070c102
         ).unwrap();
 
         // Send stats over WebSocket
@@ -255,6 +228,8 @@ async fn main() {
     let addr = "0.0.0.0:8998";
     let listener = TcpListener::bind(&addr).await.expect("Failed to build");
     println!("WebSocket server listening on {}", addr);
+
+    demo_system::init_demo_system();
 
     let log_list: Arc<Mutex<HashMap<u32, String>>> = Arc::new(
         Mutex::new(HashMap::new())
