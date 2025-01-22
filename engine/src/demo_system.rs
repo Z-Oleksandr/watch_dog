@@ -55,7 +55,7 @@ impl DemoSystem {
             uptime: 123456789,
             num_cpus: 4,
             num_disks: 3,
-            total_memory: rng.gen_range(1..=8) * 4_000_000_000,
+            total_memory: 16_000_000_000,
             disks_total_space,
             disks_used_space,
             cpu_usage_store: vec![0.0, 0.0, 0.0, 0.0],
