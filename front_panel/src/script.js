@@ -7,9 +7,7 @@ import {
     zero_gauges,
 } from "./server_connection/server_connection";
 
-// let ws = new WebSocket(`https://${window.location.hostname}/wss`);
-
-let ws = new WebSocket("ws://localhost:8998");
+let ws = new WebSocket(`https://${window.location.hostname}/wss`);
 
 let connectionAt = `https://${window.location.hostname}/wss`;
 console.log("WS connection at: " + connectionAt);
