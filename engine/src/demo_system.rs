@@ -30,6 +30,19 @@ pub fn get_demo_system() -> Arc<Mutex<DemoSystem>> {
 impl DemoSystem {
     pub fn new() -> Self {
         let mut rng = ChaCha20Rng::from_entropy();
+        let disks_total_space = vec![
+            rng.gen_range(250..=3000),
+            rng.gen_range(250..=3000),
+            rng.gen_range(250..=3000)
+        ];
+        let disks_used_space = {
+            disks_total_space
+                .iter()
+                .map(|&total| rng.gen_range(100..total) * 1000)
+                .collect()
+        };
+
+
         Self {
             rng: rng.clone(),
             system_name: "Demo system".to_string(),
@@ -41,17 +54,8 @@ impl DemoSystem {
             num_cpus: 4,
             num_disks: 3,
             total_memory: rng.gen_range(1..=8) * 4_000_000_000,
-            disks_total_space: vec![
-                rng.gen_range(250..=3000),
-                rng.gen_range(250..=3000),
-                rng.gen_range(250..=3000)
-            ],
-            disks_used_space: {
-                Self.disks_total_space
-                    .iter()
-                    .map(|&total| Self.rng.gen_range(100..total) * 1000)
-                    .collect()
-            },
+            disks_total_space,
+            disks_used_space,
         }
     }
 
