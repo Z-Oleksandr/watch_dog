@@ -13,6 +13,7 @@ pub struct DemoSystem {
     num_cpus: usize,
     num_disks: u32,
     disks_total_space: Vec<u64>,
+    disks_used_space: Vec<u64>,
     total_memory: u64,
 }
 
@@ -23,7 +24,7 @@ pub fn init_demo_system() {
 }
 
 pub fn get_demo_system() -> Arc<Mutex<DemoSystem>> {
-    DEMO_SYSTEM.get().expect("DemoSystem not initialized").clone();
+    DEMO_SYSTEM.get().expect("DemoSystem not initialized").clone()
 }
 
 impl DemoSystem {
@@ -45,7 +46,12 @@ impl DemoSystem {
                 rng.gen_range(250..=3000),
                 rng.gen_range(250..=3000)
             ],
-
+            disks_used_space: {
+                Self.disks_total_space
+                    .iter()
+                    .map(|&total| Self.rng.gen_range(100..total) * 1000)
+                    .collect()
+            },
         }
     }
 
@@ -79,11 +85,8 @@ impl DemoSystem {
         self.disks_total_space.clone()
     }
 
-    pub fn disks_used_space(&mut self) -> Vec<u64> {
-        self.disks_total_space
-            .iter()
-            .map(|&total| self.rng.gen_range(100..total))
-            .collect()
+    pub fn disks_used_space(&self) -> Vec<u64> {
+        self.disks_used_space.clone()
     }
 
     pub fn data_received(&mut self) -> u64 {
