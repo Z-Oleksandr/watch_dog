@@ -1,5 +1,4 @@
 # Logs
-logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -128,5 +127,3 @@ dist
 package-lock.json
 
 front_panel/dist/
-
-logs/*.json
