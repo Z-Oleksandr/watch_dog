@@ -29,8 +29,6 @@ pub fn get_system_stats(loop_counter: u64) -> SystemStats {
     let network_received = demo_sys.data_received() / 1000;
     let network_transmitted = demo_sys.data_transmitted() / 1000;
 
-    println!("Disks used: {:#?}", disks_used_space);
-
     let uptime = demo_sys.uptime + loop_counter;
 
     return SystemStats {
