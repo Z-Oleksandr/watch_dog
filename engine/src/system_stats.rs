@@ -19,15 +19,15 @@ pub fn get_system_stats(loop_counter: u64) -> SystemStats {
 
     let mut demo_sys = demo_sys.lock().expect("Failed to lock DemoSystem");
 
-    let cpu_usage = demo_sys.cpu_usage();
+    let cpu_usage = demo_sys.cpu_usage(&loop_counter);
 
     let ram_total = demo_sys.total_memory() / 1_000_000;
     let ram_used = demo_sys.used_memory() / 1_000_000;
 
     let disks_used_space = demo_sys.disks_used_space();
 
-    let network_received = demo_sys.data_received() / 1000;
-    let network_transmitted = demo_sys.data_transmitted() / 1000;
+    let network_received = demo_sys.data_received(&loop_counter) / 1000;
+    let network_transmitted = demo_sys.data_transmitted(&loop_counter) / 1000;
 
     let uptime = demo_sys.uptime + loop_counter;
 

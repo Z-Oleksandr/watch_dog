@@ -15,6 +15,8 @@ pub struct DemoSystem {
     disks_total_space: Vec<u64>,
     disks_used_space: Vec<u64>,
     total_memory: u64,
+    cpu_usage_store: Vec<f32>,
+    net_store: Vec<u64>
 }
 
 pub static DEMO_SYSTEM: OnceLock<Arc<Mutex<DemoSystem>>> = OnceLock::new();
@@ -56,6 +58,8 @@ impl DemoSystem {
             total_memory: rng.gen_range(1..=8) * 4_000_000_000,
             disks_total_space,
             disks_used_space,
+            cpu_usage_store: vec![0.0, 0.0, 0.0, 0.0],
+            net_store: vec![0, 0]
         }
     }
 
@@ -63,14 +67,27 @@ impl DemoSystem {
         self.num_cpus
     } 
 
-    pub fn cpu_usage(&mut self) -> Vec<f32> {
-        (0..self.num_cpus)
+    pub fn cpu_usage(&mut self, loop_counter: &u64) -> Vec<f32> {
+        if *loop_counter % 3 == 0 || *loop_counter == 0 {
+            let cpu_usage_store: Vec<f32> = (0..self.num_cpus)
             .map(|_| {
                 let usage: f32 = 
                     self.rng.gen_range(0.0..=100.0) * self.rng.gen_range(0.5..=1.5);
                 usage.min(100.0)
             })
-            .collect()
+            .collect();
+
+            self.cpu_usage_store = cpu_usage_store.clone();
+
+            cpu_usage_store
+        } else {
+            self.cpu_usage_store.clone()
+                .iter()
+                .map(|value| {
+                    value * 0.88
+                })
+                .collect()
+        }
     }
 
     pub fn total_memory(&self) -> u64 {
@@ -78,7 +95,7 @@ impl DemoSystem {
     }
 
     pub fn used_memory(&self) -> u64 {
-        self.total_memory / 2
+        (self.total_memory / 4) + 1_696_969_690
     }
 
     pub fn num_disks(&self) -> u32 {
@@ -93,11 +110,27 @@ impl DemoSystem {
         self.disks_used_space.clone()
     }
 
-    pub fn data_received(&mut self) -> u64 {
-        self.rng.gen_range(0..900_000_000)
+    pub fn data_received(&mut self, loop_counter: &u64) -> u64 {
+        if *loop_counter % 20 == 0 {
+            let value = self.rng.gen_range(0..900_000_000);
+            self.net_store[0] = value;
+            value
+        } else if *loop_counter % 21 == 0 || *loop_counter % 22 == 0 {
+            self.net_store[0]
+        } else {
+            0
+        }
     }
 
-    pub fn data_transmitted(&mut self) -> u64 {
-        self.rng.gen_range(0..900_000_000)
+    pub fn data_transmitted(&mut self, loop_counter: &u64) -> u64 {
+        if *loop_counter % 16 == 0 {
+            let value = self.rng.gen_range(0..900_000_000);
+            self.net_store[1] = value;
+            value
+        } else if *loop_counter % 16 == 0 || *loop_counter % 17 == 0 {
+            self.net_store[1]
+        } else {
+            0
+        }
     }
 }

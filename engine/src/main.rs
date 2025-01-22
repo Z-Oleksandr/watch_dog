@@ -202,6 +202,8 @@ async fn handle_connection(
             .expect("Error sending system info");
     }
 
+    time::sleep(Duration::from_secs(5)).await;
+
     // Live System Stats stream
     let mut loop_counter: u64 = 0;
     loop {
@@ -218,7 +220,7 @@ async fn handle_connection(
                 break;
             }
         }
-
+        loop_counter += 1;
         time::sleep(Duration::from_secs(1)).await;
     }
 }
