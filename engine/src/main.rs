@@ -31,6 +31,8 @@ use logger::log_stats;
 mod send_log_data;
 use send_log_data::send_log_data;
 
+mod docker_mon;
+
 #[derive(Deserialize, Debug)]
 struct IncomingMessage {
     r#type: String,

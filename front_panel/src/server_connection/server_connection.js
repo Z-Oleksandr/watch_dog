@@ -85,6 +85,7 @@ export function server_communication(ws) {
             }
         }
 
+        // DataType #0
         if (data_stream.data_type == 0 && !ui_initialized.gauges) {
             // init CPU
             numCPUs = data_stream.num_cpus;
@@ -356,6 +357,7 @@ export function server_communication(ws) {
         }
 
         // Display
+        // DataType #2
         if (data_stream.data_type == 2 && !ui_initialized.display) {
             const display = document.getElementsByClassName("display")[0];
             initDisplay(display);
@@ -371,7 +373,7 @@ export function server_communication(ws) {
                     text.appendChild(
                         document.createTextNode(topic + ": " + info)
                     );
-                    if (index < 4) {
+                    if (index < 5) {
                         column1.appendChild(text);
                     } else {
                         column2.appendChild(text);
@@ -398,6 +400,7 @@ export function server_communication(ws) {
             ui_initialized.display = true;
         }
 
+        // DataType #1
         if (data_stream.data_type == 1) {
             // CPU
             let splitter = window.innerWidth < 768 ? 1 : 4;
@@ -498,10 +501,12 @@ export function server_communication(ws) {
             updateUptime(data_stream.uptime);
         }
 
+        // DataType #3
         if (data_stream.data_type == 3) {
             update_log_list(data_stream.log_list);
         }
 
+        // DataType #4
         if (data_stream.data_type == 4) {
             update_log_data(
                 data_stream.cnr_data,

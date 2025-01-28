@@ -10,6 +10,8 @@ use lazy_static::lazy_static;
 
 use crate::helpers::{is_initialized_disk, is_not_pidor};
 
+use crate::docker_mon::init_docker_mon;
+
 #[derive(Serialize)]
 pub struct SystemData {
     data_type: u32,
@@ -28,6 +30,7 @@ pub struct SystemInfo {
     os_version: String,
     host_name: String,
     uptime: u64,
+    docker: bool,
 }
 
 lazy_static! {
@@ -88,6 +91,8 @@ pub fn get_system_info() -> SystemInfo {
 
     let uptime = System::uptime();
 
+    let docker = init_docker_mon();
+
     return SystemInfo {
         data_type: 2,
         system_name,
@@ -95,7 +100,8 @@ pub fn get_system_info() -> SystemInfo {
         cpu_arch,
         os_version,
         host_name,
-        uptime
+        uptime,
+        docker
     }
 }
 
