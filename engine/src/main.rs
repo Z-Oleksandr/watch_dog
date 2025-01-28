@@ -104,7 +104,7 @@ async fn send_log_list(
     write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
     log_list: Arc<Mutex<HashMap<u32, String>>>
 ) {
-    let log_dir = "../logs/";
+    let log_dir = "../../logs/";
     match ensure_dir(&log_dir) {
         Ok(_) => {},
         Err(e) => println!("Something wrong with the log dir: {}", e),
