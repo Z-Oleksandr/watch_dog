@@ -207,7 +207,6 @@ body {
     }
 
     #cpu canvas {
-        width: 15vh;
         height: 15vh;
         padding-right: 20px;
     }

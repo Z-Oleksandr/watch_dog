@@ -30,7 +30,7 @@ pub struct SystemInfo {
     os_version: String,
     host_name: String,
     uptime: u64,
-    docker: bool,
+    docker: String,
 }
 
 lazy_static! {
@@ -73,7 +73,7 @@ pub fn get_system_data() -> SystemData {
     }
 }
 
-pub fn get_system_info() -> SystemInfo {
+pub async fn get_system_info() -> SystemInfo {
     let system_name = System::name()
         .unwrap_or("System name not found".to_string());
 
@@ -91,7 +91,7 @@ pub fn get_system_info() -> SystemInfo {
 
     let uptime = System::uptime();
 
-    let docker = init_docker_mon();
+    let docker = init_docker_mon().await;
 
     return SystemInfo {
         data_type: 2,

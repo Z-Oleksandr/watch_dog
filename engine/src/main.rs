@@ -189,7 +189,7 @@ async fn handle_connection(
 
     // Send general system info
     let system_info_json = serde_json::to_string(
-        &get_system_info()
+        &get_system_info().await
     ).unwrap();
 
     {
