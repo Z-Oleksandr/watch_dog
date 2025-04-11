@@ -13,6 +13,8 @@ let cpu_section = document.getElementsByClassName("cSec")[0];
 let ramandnet_section = document.getElementsByClassName("ramandnet")[0];
 let disk_section = document.getElementsByClassName("dSec")[0];
 
+const fontSize = getFontSize();
+
 function getSectionSize(section) {
     let sec_width = section.offsetWidth;
     let sec_height = section.offsetHeight;
@@ -34,7 +36,7 @@ let opts_general = {
     highDpiSupport: true,
     generateGradient: true,
     staticLabels: {
-        font: "18px orbitron",
+        font: `${fontSize}px orbitron`,
         labels: [0, 60, 100],
         color: "#000000",
         fractionDigits: 0,
@@ -130,6 +132,10 @@ export function server_communication(ws) {
                 );
 
                 for (let i = 0; i < 4; i++) {
+                    // Create div for each cluster
+                    let subContainer = document.createElement("div");
+                    subContainer.classList.add("cpuSubcontainer");
+                    cpu_container.appendChild(subContainer);
                     // Create label for each cluster
                     let label = document.createElement("p");
                     label.classList.add("gTitle");
@@ -144,8 +150,8 @@ export function server_communication(ws) {
                     canvas.width = cpuGaugeSize[0];
                     canvas.height = cpuGaugeSize[1];
 
-                    cpu_container.appendChild(label);
-                    cpu_container.appendChild(canvas);
+                    subContainer.appendChild(label);
+                    subContainer.appendChild(canvas);
 
                     let cpu_gauge = new Gauge(canvas).setOptions(opts_general);
                     cpu_gauge.maxValue = 100;
@@ -161,7 +167,7 @@ export function server_communication(ws) {
             let init_ram_total = Math.round(data_stream.init_ram_total / 1000);
             let opts_ram = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "18px orbitron",
+                    font: `${fontSize}px orbitron`,
                     labels: [
                         0,
                         (0.8 * init_ram_total) / 3,
@@ -238,7 +244,7 @@ export function server_communication(ws) {
                 if (window.innerWidth < 768) {
                     opts_net = Object.assign({}, opts_general, {
                         staticLabels: {
-                            font: "9px orbitron",
+                            font: `${fontSize}px orbitron`,
                             labels: [0, 125, 250, 375, 500],
                             color: "#000000",
                             fractionDigits: 0,
@@ -254,7 +260,7 @@ export function server_communication(ws) {
                 } else {
                     opts_net = Object.assign({}, opts_general, {
                         staticLabels: {
-                            font: "18px orbitron",
+                            font: `${fontSize}px orbitron`,
                             labels: [0, 125, 250, 375, 500],
                             color: "#000000",
                             fractionDigits: 0,
@@ -310,7 +316,7 @@ export function server_communication(ws) {
 
                 let otps_disk = Object.assign({}, opts_general, {
                     staticLabels: {
-                        font: "18px orbitron",
+                        font: `${fontSize}px orbitron`,
                         labels: [
                             0,
                             data_stream.disks_space[i] / 4,
@@ -452,7 +458,7 @@ export function server_communication(ws) {
 
             let opts_net_max = Object.assign({}, opts_general, {
                 staticLabels: {
-                    font: "18px orbitron",
+                    font: `${fontSize}px orbitron`,
                     labels: [0, 250, 500, 750, 1000],
                     color: "#000000",
                     fractionDigits: 0,
@@ -578,46 +584,24 @@ function findGaugeSizeByWidth(number, conWidth, conHeight, spacing) {
     return findGaugeSizeByHeight(number, conHeight, conWidth, spacing);
 }
 
-function findGaugeSizeQuadro(number, conWidth, conHeight, spacing) {
-    let cols, rows;
-    let root = Math.sqrt(number);
-    if (Number.isInteger(root)) {
-        cols = root;
-        rows = root;
-    } else {
-        cols = Math.ceil(root);
-        rows = Math.floor(root);
-    }
+function getFontSize() {
+    const minFont = 9;
+    const maxFont = 18;
 
-    let gaugeWidth;
-    let gaugeHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    if (conHeight > conWidth) {
-        let hold = cols;
-        cols = rows;
-        rows = hold;
-        if (number > 4) {
-            opts_general.staticLabels.font = "9px orbitron";
-            conHeight -= 50;
-            conWidth -= 10;
-        } else {
-            opts_general.staticLabels.font = "12px orbitron";
-            conHeight -= 180;
-            conWidth -= 30;
-        }
-        gaugeWidth = Math.floor(conWidth / cols) - spacing;
-        gaugeHeight = gaugeWidth;
-    } else {
-        gaugeWidth = Math.floor(conWidth / cols) - spacing;
-        gaugeHeight = gaugeWidth;
-    }
+    const sizeBase = (width + height) / 2;
 
-    if (gaugeWidth > 476) {
-        gaugeWidth = 476;
-        gaugeHeight = 476;
-    }
+    const factor = 60;
 
-    return [gaugeWidth, gaugeHeight];
+    let fontSize = Math.round(sizeBase / factor);
+
+    fontSize = Math.max(minFont, Math.min(maxFont, fontSize));
+
+    console.log("Font size set to: " + fontSize);
+
+    return fontSize;
 }
 
 function updateUptime(value) {

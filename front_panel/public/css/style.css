@@ -146,6 +146,10 @@ body {
         margin-bottom: -5vh;
     }
 
+    .diskSubSection p {
+        padding-left: 15px;
+    }
+
     .nTitle {
         position: relative;
         bottom: 16vh;
@@ -200,19 +204,28 @@ body {
     }
 
     #cpu {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
         justify-content: center;
         align-items: center;
-        flex-wrap: wrap;
+        column-gap: 15vw;
+    }
+
+    .cpuSubcontainer {
+        position: relative;
+        height: 15vh;
     }
 
     #cpu canvas {
         height: 15vh;
-        padding-right: 20px;
     }
 
     #cpu p {
-        padding-left: 20px;
+        position: absolute;
+        bottom: 50%;
+        left: 32%;
+        height: 5px;
     }
 
     .center {
