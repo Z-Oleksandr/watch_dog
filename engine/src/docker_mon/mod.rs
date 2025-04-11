@@ -23,7 +23,9 @@ pub async fn init_docker_mon() -> String {
 
         get_containers(&docker).await;
 
-        return format!("{:?}", docker.version().await.unwrap())
+        let version_info = docker.version().await.unwrap();
+
+        return version_info.version.unwrap_or("Unknown version".to_string());
     }
 
     return "false".to_string()
