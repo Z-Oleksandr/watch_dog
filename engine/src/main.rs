@@ -33,6 +33,8 @@ use send_log_data::send_log_data;
 
 mod docker_mon;
 
+use docker_mon::send_containers::send_containers_list;
+
 #[derive(Deserialize, Debug)]
 struct IncomingMessage {
     r#type: String,
@@ -83,6 +85,16 @@ async fn handle_read(
                                     incoming_msg.message as u32, 
                                     write_clone, 
                                     log_list_clone
+                                ).await
+                            }
+                        );
+                    },
+                    "get_containers" => {
+                        let write_clone = Arc::clone(&write);
+                        tokio::spawn(
+                            async move {
+                                send_containers_list(
+                                    write_clone,
                                 ).await
                             }
                         );
