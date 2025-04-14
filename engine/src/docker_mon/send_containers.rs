@@ -1,6 +1,5 @@
-use serde::Serialize;
 use serde_json::json;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 use tokio::{sync::Mutex, net::TcpStream};
 use futures::{SinkExt, stream::SplitSink};
 use tokio_tungstenite::{
@@ -10,36 +9,27 @@ use tokio_tungstenite::{
 
 use super::CONTAINER_REGISTER;
 
-#[derive(Serialize)]
-struct ContainerInfo {
-    index: u32,
-    name: String,
-}
-
 pub async fn send_containers_list(
     write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>
 ) {
     let container_reg = CONTAINER_REGISTER.lock().await;
 
-    let list: Vec<ContainerInfo> = container_reg
-        .iter()
-        .map(|(index, container)| {
-            let name = container
-                .names
-                .get(0)
-                .map(|s| s.trim_start_matches('/').to_string())
-                .unwrap_or_else(|| "unknown".to_string());
+    let mut container_map: BTreeMap<u32, String> = BTreeMap::new();
 
-            ContainerInfo {
-                index: *index,
-                name,
-            }
-        }).collect();
+    for (index, container) in container_reg.iter() {
+        let name = container
+            .names
+            .get(0)
+            .map(|s| s.trim_start_matches("/").to_string())
+            .unwrap_or_else(|| "unkown".to_string());
+
+        container_map.insert(*index, name);
+    }
 
     let payload = json!(
         {
             "data_type": 5,
-            "list": &list
+            "list": container_map
         }
     );
 

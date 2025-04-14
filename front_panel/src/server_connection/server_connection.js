@@ -1,6 +1,7 @@
 import { isMobile } from "../script";
 import { indicators } from "../control2/indicator";
 import { update_log_list, update_log_data } from "../chart/chart";
+import { handle_received_container_list } from "../functions/docker";
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");
@@ -519,6 +520,11 @@ export function server_communication(ws) {
                 data_stream.net_data,
                 ram_gauge.maxValue * 1000
             );
+        }
+
+        // DataType #5
+        if (data_stream.data_type == 5) {
+            handle_received_container_list(data_stream.list);
         }
     };
 }
