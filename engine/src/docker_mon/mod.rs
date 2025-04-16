@@ -1,14 +1,14 @@
 use which::which;
-use reqwest::Client;
 use serde::Deserialize;
 use bollard::{Docker, container, API_DEFAULT_VERSION};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 
 pub mod send_containers;
+pub mod stream_container;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Container {
     pub id: String,
     pub names: Vec<String>,
@@ -17,7 +17,7 @@ pub struct Container {
 
 lazy_static! {
     pub static ref CONTAINER_REGISTER: 
-        Mutex<HashMap<u32, Container>> = Mutex::new(HashMap::new());
+        Mutex<BTreeMap<u32, Container>> = Mutex::new(BTreeMap::new());
 }
 
 pub async fn init_docker_mon() -> String {

@@ -33,7 +33,10 @@ use send_log_data::send_log_data;
 
 mod docker_mon;
 
-use docker_mon::send_containers::send_containers_list;
+use docker_mon::{
+    send_containers::send_containers_list,
+    stream_container::stream_container
+};
 
 #[derive(Deserialize, Debug)]
 struct IncomingMessage {
@@ -98,7 +101,18 @@ async fn handle_read(
                                 ).await
                             }
                         );
-                    }
+                    },
+                    "start_container_output" => {
+                        let write_clone = Arc::clone(&write);
+                        tokio::spawn(
+                            async move {
+                                stream_container(
+                                    write_clone, 
+                                    incoming_msg.message.to_string()
+                                ).await;
+                            }
+                        );
+                    },
                     _ => println!("Unknown message type"),
                 };
             }
