@@ -190,7 +190,7 @@ async fn handle_connection(
         .expect("Failed to accept");
 
     // Split ws stream into sender and receiver
-    let (mut write, mut read) = ws_stream.split();
+    let (write, read) = ws_stream.split();
 
     let write = Arc::new(Mutex::new(write));
 

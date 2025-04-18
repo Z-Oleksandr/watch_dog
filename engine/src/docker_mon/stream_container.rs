@@ -10,11 +10,15 @@ use tokio_tungstenite::{
 
 use super::{CONTAINER_REGISTER, Container};
 
+// message should container index and channel over wich to stream the output,
+// seperated with "99899" sequence
 pub async fn stream_container(
     write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
     message: String
 ) {
-    let (container_index, channel) = if let Some((container_index, channel)) = get_index_and_channel(&message) {
+    let (container_index, channel) = if let Some(
+        (container_index, channel)
+    ) = get_index_and_channel(&message) {
         (container_index, channel)
     } else {
         eprintln!("Error parsing container message: {}", &message);

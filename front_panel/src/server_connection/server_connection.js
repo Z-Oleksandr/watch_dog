@@ -2,6 +2,8 @@ import { isMobile } from "../script";
 import { indicators } from "../control2/indicator";
 import { update_log_list, update_log_data } from "../chart/chart";
 import { handle_received_container_list } from "../functions/docker";
+import { get_container_stream_register } from "../functions/docker";
+import { write_container_log_to_display } from "../docker_stream/docker_stream_handler";
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");
@@ -525,6 +527,22 @@ export function server_communication(ws) {
         // DataType #5
         if (data_stream.data_type == 5) {
             handle_received_container_list(data_stream.list);
+        }
+
+        // Container stream messages
+        const container_stream_register = get_container_stream_register();
+        if (
+            container_stream_register.count != 0 &&
+            container_stream_register.channels
+        ) {
+            for (const [container_index, channel] of Object.entries(
+                container_stream_register.channels
+            )) {
+                if (Number(channel) === data_stream.data_type) {
+                    console.log("Received channel: " + channel);
+                    write_container_log_to_display(data_stream.log_line);
+                }
+            }
         }
     };
 }

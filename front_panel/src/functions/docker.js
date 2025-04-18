@@ -12,6 +12,15 @@ class ContainerOutputRequest {
     }
 }
 
+class ContainerStreamRegister {
+    // Keeps track of which container is streamed over which channel
+    // Channels are the count number twice
+    constructor() {
+        this.count = 0;
+        this.channels = Object.create(null);
+    }
+}
+
 export function start_container_stdout() {
     display.write_line("Getting containers list...");
     sendWSMessage("get_containers", 0);
@@ -63,18 +72,38 @@ function buttonsDocker(containerOutputRequest, limit) {
                 `Container ${containerOutputRequest.index} selected`,
                 true
             );
+            const message = construct_container_stream_message(
+                containerOutputRequest.index
+            );
+            sendWSMessage(containerOutputRequest.type, message);
             display.write_line(
                 "Sending request: " +
                     containerOutputRequest.type +
                     " " +
-                    containerOutputRequest.index
-            );
-            sendWSMessage(
-                containerOutputRequest.type,
-                containerOutputRequest.index
+                    message
             );
             init_functions();
         },
         "select"
     );
+}
+
+let container_stream_register = new ContainerStreamRegister();
+
+export function get_container_stream_register() {
+    return container_stream_register;
+}
+
+function construct_container_stream_message(container_index) {
+    if (!(container_index in container_stream_register.channels)) {
+        container_stream_register.count += 1;
+        const channel = container_stream_register.count.toString().repeat(2);
+        container_stream_register.channels[container_index] = channel;
+    }
+
+    const channel = container_stream_register.channels[container_index];
+
+    const message = Number(`${container_index}99899${channel}`);
+    console.log("Message: " + message);
+    return message;
 }
