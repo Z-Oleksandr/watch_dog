@@ -3,10 +3,15 @@ use serde::Deserialize;
 use bollard::{Docker, container, API_DEFAULT_VERSION};
 use std::collections::BTreeMap;
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 use lazy_static::lazy_static;
+
+use crate::IncomingMessage;
 
 pub mod send_containers;
 pub mod stream_container;
+
+use stream_container::{get_index_and_channel, STREAM_REGISTRY};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Container {
@@ -78,4 +83,35 @@ async fn get_containers(docker: &Docker) {
             eprint!("Error getting containers: {}", e);
         }
     }
+}
+
+#[derive(Debug)]
+pub struct PreparedStreamContainerData {
+    pub container_index: u32,
+    pub channel: u32,
+    pub token: CancellationToken
+}
+
+pub async fn prepare_start_container(msg: IncomingMessage) -> Option<PreparedStreamContainerData> {
+    let message = msg.message.to_string();
+
+    let (container_index, channel) = match get_index_and_channel(&message) {
+        Some(pair) => pair,
+        None => return None,
+    };
+
+    let mut registry = STREAM_REGISTRY.lock().await;
+
+    if registry.contains_key(&channel) {
+        println!("Stream already running for {:?}", channel);
+        return None;
+    }
+
+    let token = CancellationToken::new();
+
+    registry.insert(channel, token.clone());
+
+    return Some(
+        PreparedStreamContainerData {container_index, channel, token}
+    )
 }

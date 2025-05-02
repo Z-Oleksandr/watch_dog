@@ -1,30 +1,32 @@
 use bollard::{Docker, container::LogsOptions, API_DEFAULT_VERSION};
 use serde_json::json;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 use tokio::{sync::Mutex, net::TcpStream};
+use tokio_util::sync::CancellationToken;
 use futures::{stream::SplitSink, SinkExt, TryStreamExt};
 use tokio_tungstenite::{
     tungstenite::protocol::Message, 
     WebSocketStream
 };
+use lazy_static::lazy_static;
+
 
 use super::{CONTAINER_REGISTER, Container};
+
+lazy_static! {
+    pub static ref STREAM_REGISTRY: 
+        Mutex<HashMap<u32, CancellationToken>> = 
+            Mutex::new(HashMap::new());
+}
 
 // message should container index and channel over wich to stream the output,
 // seperated with "99899" sequence
 pub async fn stream_container(
     write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
-    message: String
+    container_index: u32,
+    channel: u32,
+    cancel_token: CancellationToken
 ) {
-    let (container_index, channel) = if let Some(
-        (container_index, channel)
-    ) = get_index_and_channel(&message) {
-        (container_index, channel)
-    } else {
-        eprintln!("Error parsing container message: {}", &message);
-        return;
-    };
-
     let container = if let Some(container) = get_container_from_reg(container_index).await {
         container
     } else {
@@ -55,6 +57,10 @@ pub async fn stream_container(
     );
 
     while let Ok(log_result) = latest_logs.try_next().await {
+        if cancel_token.is_cancelled() {
+            println!("Cancelled latest logs for {:?}", container_index);
+            return;
+        }
         if let Some(log_output) = log_result {
             let log_str = log_output.to_string();
             send_log_line(log_str, write.clone(), channel).await;
@@ -75,6 +81,10 @@ pub async fn stream_container(
 
 
     while let Ok(log_result) = live_logs.try_next().await {
+        if cancel_token.is_cancelled() {
+            println!("Cancelled latest logs for {:?}", container_index);
+            return;
+        }
         if let Some(log_output) = log_result {
             let log_str = log_output.to_string();
             send_log_line(log_str, write.clone(), channel).await;
@@ -111,7 +121,7 @@ async fn get_container_from_reg(index: u32) -> Option<Container> {
     container_reg.get(&index).cloned()
 }
 
-fn get_index_and_channel(message: &str) -> Option<(u32, u32)> {
+pub fn get_index_and_channel(message: &str) -> Option<(u32, u32)> {
     let key = "99899";
     if let Some(pos) = message.find(key) {
         let container_index = &message[..pos];

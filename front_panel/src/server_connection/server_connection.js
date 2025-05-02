@@ -3,7 +3,7 @@ import { indicators } from "../control2/indicator";
 import { update_log_list, update_log_data } from "../chart/chart";
 import { handle_received_container_list } from "../functions/docker";
 import { get_container_stream_register } from "../functions/docker";
-import { write_container_log_to_display } from "../docker_stream/docker_stream_handler";
+import { write_container_log_to_portal } from "../docker_stream/docker_stream_handler";
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");
@@ -535,12 +535,15 @@ export function server_communication(ws) {
             container_stream_register.count != 0 &&
             container_stream_register.channels
         ) {
-            for (const [container_index, channel] of Object.entries(
+            for (const [containerIndex, channel] of Object.entries(
                 container_stream_register.channels
             )) {
                 if (Number(channel) === data_stream.data_type) {
-                    console.log("Received channel: " + channel);
-                    write_container_log_to_display(data_stream.log_line);
+                    write_container_log_to_portal(
+                        containerIndex,
+                        channel,
+                        data_stream.log_line
+                    );
                 }
             }
         }

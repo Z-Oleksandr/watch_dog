@@ -6,6 +6,8 @@ import { sendWSMessage } from "../script";
 import { start_logger } from "./logger";
 import { start_container_stdout } from "./docker";
 
+import { portalManager } from "../docker_stream/portalManager";
+
 let display = getDisplay2();
 
 export function init_functions() {
@@ -58,7 +60,8 @@ function extraButton2() {
     new_assign_button(
         2,
         () => {
-            display.write_line("Nothing here for now");
+            display.write_line("Nothing here for now.");
+            portalManager.create(69, "This is a medium portal header");
         },
         "button 2"
     );

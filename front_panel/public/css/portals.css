@@ -1,0 +1,85 @@
+.portal {
+    width: 30vw;
+    height: 40vh;
+    max-height: 400px;
+    background: #f55676;
+    border: 1px solid black;
+    position: absolute;
+    top: 100px;
+    left: 100px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.portal.portalMin {
+    width: 250px;
+    height: 42px;
+    position: fixed;
+    top: auto;
+    bottom: 4px;
+    left: 4px;
+}
+
+.portal-header {
+    border-bottom: 1px solid black;
+    padding: 3px;
+    cursor: grab;
+    user-select: none;
+}
+
+.portal-header p {
+    margin: 0;
+    padding: 5px;
+}
+
+.portal-body {
+    padding: 5px;
+}
+
+.portal.portalMin p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 188px;
+    margin: 0;
+    padding: 0;
+    line-height: 40px;
+}
+
+.portal-controls {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.portal-btn {
+    width: 24px;
+    height: 24px;
+    background: #ccc;
+    border: none;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.log-container {
+    overflow-y: auto;
+    max-height: 300px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.log-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}

@@ -18,8 +18,11 @@ class ContainerStreamRegister {
     constructor() {
         this.count = 0;
         this.channels = Object.create(null);
+        this.list = {};
     }
 }
+
+let container_stream_register = new ContainerStreamRegister();
 
 export function start_container_stdout() {
     display.write_line("Getting containers list...");
@@ -30,6 +33,7 @@ export function handle_received_container_list(list) {
     Object.entries(list).forEach(([index, containerName]) => {
         display.write_line(`${index}: ${containerName}`);
     });
+    container_stream_register.list = list;
     const limit = Object.keys(list).length - 1;
     setTimeout(() => {
         display.write_line("Choose container to stream output:");
@@ -38,11 +42,11 @@ export function handle_received_container_list(list) {
             "start_container_output",
             0
         );
-        buttonsDocker(containerOutputRequest, limit);
+        buttonsDocker(containerOutputRequest, limit, list);
     }, 500);
 }
 
-function buttonsDocker(containerOutputRequest, limit) {
+function buttonsDocker(containerOutputRequest, limit, list) {
     new_assign_button(
         0,
         () => {
@@ -88,20 +92,17 @@ function buttonsDocker(containerOutputRequest, limit) {
     );
 }
 
-let container_stream_register = new ContainerStreamRegister();
-
 export function get_container_stream_register() {
     return container_stream_register;
 }
 
 function construct_container_stream_message(container_index) {
-    if (!(container_index in container_stream_register.channels)) {
+    const channel = container_index.toString().repeat(2);
+    if (!(channel in container_stream_register.channels)) {
         container_stream_register.count += 1;
-        const channel = container_stream_register.count.toString().repeat(2);
         container_stream_register.channels[container_index] = channel;
     }
-
-    const channel = container_stream_register.channels[container_index];
+    console.log(`Message before: ${container_index}99899${channel}`);
 
     const message = Number(`${container_index}99899${channel}`);
     console.log("Message: " + message);
