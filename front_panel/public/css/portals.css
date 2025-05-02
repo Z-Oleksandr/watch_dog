@@ -2,8 +2,9 @@
     width: 30vw;
     height: 40vh;
     max-height: 400px;
-    background: #f55676;
-    border: 1px solid black;
+    background: #617abf;
+    border: 2px solid black;
+    border-radius: 4.2px;
     position: absolute;
     top: 100px;
     left: 100px;
@@ -13,14 +14,16 @@
 
 .portal.portalMin {
     width: 250px;
-    height: 42px;
+    height: 47px;
     position: fixed;
     top: auto;
     bottom: 4px;
     left: 4px;
+    cursor: pointer;
 }
 
 .portal-header {
+    background: #214096;
     border-bottom: 1px solid black;
     padding: 3px;
     cursor: grab;
@@ -30,6 +33,7 @@
 .portal-header p {
     margin: 0;
     padding: 5px;
+    color: white;
 }
 
 .portal-body {
