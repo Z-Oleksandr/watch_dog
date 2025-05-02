@@ -26,9 +26,7 @@ lazy_static! {
 }
 
 pub async fn init_docker_mon() -> String {
-    // let is_docker = which("docker").is_ok();
-    // For dev
-    let is_docker = true;
+    let is_docker = which("docker").is_ok();
 
     if is_docker {
         let docker = Docker::connect_with_socket_defaults()
