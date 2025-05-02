@@ -107,8 +107,12 @@ body {
         display: flex;
         flex-direction: column;
         max-width: 50%;
-        padding: 4px;
         color: white;
+    }
+
+    .column p {
+        margin: 1.3vh;
+        font-size: 1.75vh;
     }
 
     .displayGreetingContainer {
@@ -140,6 +144,10 @@ body {
         font-weight: 600;
         font-size: small;
         margin-bottom: -5vh;
+    }
+
+    .diskSubSection p {
+        padding-left: 15px;
     }
 
     .nTitle {
@@ -196,20 +204,28 @@ body {
     }
 
     #cpu {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
         justify-content: center;
         align-items: center;
-        flex-wrap: wrap;
+        column-gap: 15vw;
+    }
+
+    .cpuSubcontainer {
+        position: relative;
+        height: 15vh;
     }
 
     #cpu canvas {
-        width: 15vh;
         height: 15vh;
-        padding-right: 20px;
     }
 
     #cpu p {
-        padding-left: 20px;
+        position: absolute;
+        bottom: 50%;
+        left: 32%;
+        height: 5px;
     }
 
     .center {
@@ -272,8 +288,12 @@ body {
         display: flex;
         flex-direction: column;
         max-width: 50%;
-        padding: 4px;
         color: white;
+    }
+
+    .column p {
+        margin: 0.5vh;
+        font-size: 1vh;
     }
 
     .displayGreetingContainer {
@@ -459,9 +479,8 @@ body {
     }
 
     .column p {
-        font-size: 10px;
-        padding: 5px;
-        margin: 0px;
+        font-size: 1.15vh;
+        margin: 0.5vh;
     }
 
     .displayGreetingContainer {

@@ -4,6 +4,9 @@ import { new_assign_button } from "../button_functions/button_functions";
 import { getDisplay2 } from "../dsiplay2/display2";
 import { sendWSMessage } from "../script";
 import { start_logger } from "./logger";
+import { start_container_stdout } from "./docker";
+
+import { portalManager } from "../docker_stream/portalManager";
 
 let display = getDisplay2();
 
@@ -46,9 +49,10 @@ function extraButton1() {
     new_assign_button(
         1,
         () => {
-            display.write_line("Nothing here for now");
+            display.write_line("Start container stdout");
+            setTimeout(() => start_container_stdout(), 1000);
         },
-        "button 1"
+        "docker log"
     );
 }
 
@@ -56,7 +60,8 @@ function extraButton2() {
     new_assign_button(
         2,
         () => {
-            display.write_line("Nothing here for now");
+            display.write_line("Nothing here for now.");
+            portalManager.create(69, "This is a medium portal header");
         },
         "button 2"
     );

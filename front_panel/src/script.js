@@ -20,6 +20,16 @@ export function isMobile() {
 
 const display2 = getDisplay2();
 
+let reload_in_progress = false;
+
+window.addEventListener("resize", function () {
+    if (!reload_in_progress) {
+        reload_in_progress = true;
+        alert("Window resized! Reloading the page...");
+    }
+    location.reload();
+});
+
 // WebSocket
 export function getWS() {
     return new Promise((res, rej) => {

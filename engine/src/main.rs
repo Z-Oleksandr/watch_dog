@@ -31,8 +31,14 @@ use logger::log_stats;
 mod send_log_data;
 use send_log_data::send_log_data;
 
-#[derive(Deserialize, Debug)]
-struct IncomingMessage {
+mod docker_mon;
+
+use docker_mon::{
+    prepare_start_container, send_containers::send_containers_list, stream_container::{get_index_and_channel, stream_container, STREAM_REGISTRY}
+};
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct IncomingMessage {
     r#type: String,
     message: u64,
 }
@@ -46,7 +52,8 @@ struct LogListStruct {
 async fn handle_read(
     mut read:SplitStream<WebSocketStream<TcpStream>>,
     write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
-    log_list: Arc<Mutex<HashMap<u32, String>>>
+    log_list: Arc<Mutex<HashMap<u32, String>>>,
+    connection_channels: Arc<Mutex<Vec<u32>>>
 ) {
     // Read message
     while let Some(Ok(msg)) = read.next().await {
@@ -84,10 +91,65 @@ async fn handle_read(
                                 ).await
                             }
                         );
+                    },
+                    "get_containers" => {
+                        let write_clone = Arc::clone(&write);
+                        tokio::spawn(
+                            async move {
+                                send_containers_list(
+                                    write_clone,
+                                ).await
+                            }
+                        );
+                    },
+                    "start_container_output" => {
+                        let write_clone = Arc::clone(&write);
+                        match prepare_start_container(incoming_msg.clone()).await {
+                            Some(data) => {
+                                let mut channels = connection_channels.lock().await;
+                                channels.push(data.channel);
+                                tokio::spawn(
+                                    async move {
+                                        stream_container(
+                                            write_clone, 
+                                            data.container_index,
+                                            data.channel,
+                                            data.token
+                                        ).await;
+
+                                        STREAM_REGISTRY
+                                            .lock()
+                                            .await
+                                            .remove(
+                                                &data.channel
+                                            )
+                                    }
+                                );
+                            },
+                            None => continue,
+                        };
+                    },
+                    "stop_container_output" => {
+                        let key = incoming_msg.message as u32;
+                        let mut registry = STREAM_REGISTRY.lock().await;
+                        if let Some(token) = registry.remove(&key) {
+                            token.cancel();
+                            println!("Cancelled stream for {:?}", key);
+                        } else {
+                            println!("No stream active for {:?}", key);
+                        }
                     }
                     _ => println!("Unknown message type"),
                 };
             }
+        }
+    }
+    let channels = connection_channels.lock().await;
+    let mut registry = STREAM_REGISTRY.lock().await;
+    for &channel in channels.iter() {
+        if let Some(token) = registry.remove(&channel) {
+            token.cancel();
+            println!("Cleaned up stream for closed connection.");
         }
     }
 }
@@ -162,14 +224,17 @@ async fn handle_connection(
         .expect("Failed to accept");
 
     // Split ws stream into sender and receiver
-    let (mut write, mut read) = ws_stream.split();
+    let (write, read) = ws_stream.split();
 
     let write = Arc::new(Mutex::new(write));
 
     let write_clone = Arc::clone(&write);
 
+    let connection_channels = Arc::new(Mutex::new(Vec::<u32>::new()));
+    let connection_channels_clone = Arc::clone(&connection_channels);
+
     tokio::spawn(async move {
-        handle_read(read, write_clone, log_list).await;
+        handle_read(read, write_clone, log_list, connection_channels_clone).await;
     });
 
     // Send static system data
@@ -187,7 +252,7 @@ async fn handle_connection(
 
     // Send general system info
     let system_info_json = serde_json::to_string(
-        &get_system_info()
+        &get_system_info().await
     ).unwrap();
 
     {

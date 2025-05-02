@@ -15,13 +15,35 @@ class LoggerStartRequest {
 export function start_logger() {
     display.write_line("Set time period for which you want to record logs:");
     let logStartRequest = new LoggerStartRequest("start_log", 1);
-    setTimeout(() => display.pending_choice("Hours: 1", false), 500);
-    buttonsLogOptions(logStartRequest);
+    setTimeout(() => {
+        display.pending_choice("Hours: 1", false);
+        buttonsLogOptions(logStartRequest);
+    }, 500);
 }
 
 function buttonsLogOptions(logStartRequest) {
     new_assign_button(
         0,
+        () => {
+            let count = logStartRequest.time + 1;
+            logStartRequest.time = count;
+            display.pending_choice(`Hours: ${count}`, false);
+        },
+        "+"
+    );
+    new_assign_button(
+        1,
+        () => {
+            if (logStartRequest.time > 1) {
+                let count = logStartRequest.time - 1;
+                logStartRequest.time = count;
+                display.pending_choice(`Hours: ${count}`, false);
+            }
+        },
+        "-"
+    );
+    new_assign_button(
+        2,
         () => {
             display.pending_choice(`Hours set: ${logStartRequest.time}`, true);
             display.write_line(
@@ -34,25 +56,5 @@ function buttonsLogOptions(logStartRequest) {
             init_functions();
         },
         "start"
-    );
-    new_assign_button(
-        1,
-        () => {
-            let count = logStartRequest.time + 1;
-            logStartRequest.time = count;
-            display.pending_choice(`Hours: ${count}`, false);
-        },
-        "+"
-    );
-    new_assign_button(
-        2,
-        () => {
-            if (logStartRequest.time > 1) {
-                let count = logStartRequest.time - 1;
-                logStartRequest.time = count;
-                display.pending_choice(`Hours: ${count}`, false);
-            }
-        },
-        "-"
     );
 }
