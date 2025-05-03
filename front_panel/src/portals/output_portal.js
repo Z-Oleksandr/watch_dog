@@ -1,10 +1,9 @@
 import { getDisplay2 } from "../dsiplay2/display2";
 import { portalManager } from "./portalManager";
-import { get_container_stream_register } from "../functions/docker";
 
 const display = getDisplay2();
 
-export class ContainerOutputPortal {
+export class OutputPortal {
     constructor(channel, name) {
         this.channel = channel;
 
@@ -129,38 +128,15 @@ export class ContainerOutputPortal {
 
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
     }
-}
 
-export function write_container_log_to_portal(index, channel, rawLog) {
-    const containerStreamRegister = get_container_stream_register();
-    const portal = portalManager.create(
-        channel,
-        containerStreamRegister.list[index]
-    );
-    const [rawTimeStamp, ...messageParts] = rawLog.split(" ");
-    const message = messageParts.join(" ");
+    addLineWithTimestamp(timestamp, log) {
+        const timeHightlight = "#cccdce";
 
-    const formattedTime = formatTimestamp(rawTimeStamp);
+        const lineDiv = document.createElement("div");
+        lineDiv.innerHTML = `<span style="color: ${timeHightlight};">${timestamp}</span> ${log}`;
 
-    const cleanMessage = message.replace(/\x1b\[[0-9;]*m/g, "");
-
-    const log = `[${formattedTime}] => ${cleanMessage}`;
-
-    portal.addLine(log);
-}
-
-function formatTimestamp(time) {
-    try {
-        const date = new Date(time);
-        return date.toLocaleString("de-DE", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    } catch (e) {
-        return time;
+        this.logContainer.appendChild(lineDiv);
+        this.logContainer.scrollTop = this.logContainer.scrollHeight;
     }
 }
 

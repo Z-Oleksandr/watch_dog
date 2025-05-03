@@ -1,9 +1,11 @@
 import { isMobile } from "../script";
 import { indicators } from "../control2/indicator";
 import { update_log_list, update_log_data } from "../chart/chart";
-import { handle_received_container_list } from "../functions/docker";
-import { get_container_stream_register } from "../functions/docker";
-import { write_container_log_to_portal } from "../docker_stream/docker_stream_handler";
+import {
+    handle_received_container_list,
+    get_container_stream_register,
+    write_container_log_to_portal,
+} from "../functions/docker";
 
 let cpu_p = document.getElementById("cpu");
 let ram_t = document.getElementById("ram_total");

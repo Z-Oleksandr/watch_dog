@@ -2,6 +2,7 @@ import { getDisplay2 } from "../dsiplay2/display2";
 import { new_assign_button } from "../button_functions/button_functions";
 import { sendWSMessage } from "../script";
 import { init_functions } from "./init_functions";
+import { portalManager } from "../portals/portalManager";
 
 const display = getDisplay2();
 
@@ -44,6 +45,24 @@ export function handle_received_container_list(list) {
         );
         buttonsDocker(containerOutputRequest, limit, list);
     }, 500);
+}
+
+export function write_container_log_to_portal(index, channel, rawLog) {
+    const containerStreamRegister = get_container_stream_register();
+    const portal = portalManager.create(
+        channel,
+        containerStreamRegister.list[index]
+    );
+    const [rawTimeStamp, ...messageParts] = rawLog.split(" ");
+    const message = messageParts.join(" ");
+
+    const formattedTime = formatTimestamp(rawTimeStamp);
+
+    const cleanMessage = message.replace(/\x1b\[[0-9;]*m/g, "");
+
+    const log = `[${formattedTime}] => ${cleanMessage}`;
+
+    portal.addLineWithTimestamp(`[${formattedTime}]`, `=> ${cleanMessage}`);
 }
 
 function buttonsDocker(containerOutputRequest, limit, list) {
@@ -107,4 +126,19 @@ function construct_container_stream_message(container_index) {
     const message = Number(`${container_index}99899${channel}`);
     console.log("Message: " + message);
     return message;
+}
+
+function formatTimestamp(time) {
+    try {
+        const date = new Date(time);
+        return date.toLocaleString("de-DE", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    } catch (e) {
+        return time;
+    }
 }

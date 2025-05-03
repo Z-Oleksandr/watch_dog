@@ -34,8 +34,15 @@ pub async fn stream_container(
         return;
     };
 
-    let docker = Docker::connect_with_socket_defaults()
-        .expect("Failed to connect to local Docker");
+    // let docker = Docker::connect_with_socket_defaults()
+    //     .expect("Failed to connect to local Docker");
+
+    // For dev  
+    let docker = Docker::connect_with_http(
+        "http://192.168.0.116:2375", 
+        4, 
+        API_DEFAULT_VERSION)
+        .expect("Failed to connect to Docker Dev");
 
     let mut latest_logs = docker.logs(
         &container.id,

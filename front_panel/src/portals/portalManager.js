@@ -1,4 +1,4 @@
-import { ContainerOutputPortal } from "./docker_stream_handler";
+import { OutputPortal } from "./output_portal";
 import { sendWSMessage } from "../script";
 
 const portals = new Map();
@@ -6,7 +6,7 @@ const portals = new Map();
 export const portalManager = {
     create(channel, name) {
         if (!portals.has(channel)) {
-            const portal = new ContainerOutputPortal(channel, name);
+            const portal = new OutputPortal(channel, name);
             portals.set(channel, portal);
         }
         return portals.get(channel);

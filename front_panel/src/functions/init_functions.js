@@ -6,7 +6,7 @@ import { sendWSMessage } from "../script";
 import { start_logger } from "./logger";
 import { start_container_stdout } from "./docker";
 
-import { portalManager } from "../docker_stream/portalManager";
+import { portalManager } from "../portals/portalManager";
 
 let display = getDisplay2();
 

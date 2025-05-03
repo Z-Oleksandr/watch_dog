@@ -31,8 +31,15 @@ pub async fn init_docker_mon() -> String {
     let is_docker = true;
 
     if is_docker {
-        let docker = Docker::connect_with_socket_defaults()
-            .expect("Failed to connect to local Docker");
+        // let docker = Docker::connect_with_socket_defaults()
+        //     .expect("Failed to connect to local Docker");
+
+        // For dev  
+        let docker = Docker::connect_with_http(
+            "http://192.168.0.116:2375", 
+            4, 
+            API_DEFAULT_VERSION)
+            .expect("Failed to connect to Docker Dev");
 
         get_containers(&docker).await;
 
