@@ -41,7 +41,7 @@ function extraButton0() {
             display.write_line("Start logging setup");
             setTimeout(() => start_logger(), 1000);
         },
-        "logging"
+        "track res"
     );
 }
 
@@ -63,7 +63,7 @@ function extraButton2() {
             display.write_line("Nothing here for now.");
             portalManager.create(69, "This is a medium portal header");
         },
-        "button 2"
+        "exec log"
     );
 }
 

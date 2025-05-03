@@ -40,6 +40,10 @@ export class OutputPortal {
         this.portalWidth = this.portal.offsetWidth;
         this.portalHeight = this.portal.offsetHeight;
 
+        this.logContainer.style.height = `${
+            this.portalHeight - this.contentHeader.offsetHeight * 1.3
+        }px`;
+
         this._onMouseDown = this._onMouseDown.bind(this);
         this._onMouseUp = this._onMouseUp.bind(this);
         this._onMouseMove = this._onMouseMove.bind(this);
@@ -68,6 +72,59 @@ export class OutputPortal {
         this.portalControlX.addEventListener("click", () => {
             portalManager.close(this.channel);
         });
+
+        this.resizer = document.createElement("div");
+        this.resizer.classList.add("portal-resizer");
+        this.resizer.innerHTML = `<img src="img/LHand.png" alt="resize" />`;
+        this.contentBody.appendChild(this.resizer);
+
+        this._initResize();
+    }
+
+    _initResize() {
+        let startX, startY, startWidth, startHeight;
+
+        const onMouseDown = (e) => {
+            if (this.hidden) return;
+            e.preventDefault();
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = this.portal.offsetWidth;
+            startHeight = this.portal.offsetHeight;
+            this.resizer.innerHTML = `<img src="img/okHand.png" alt="resize" />`;
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        };
+
+        const onMouseMove = (e) => {
+            const newWidth = Math.max(
+                300,
+                startWidth +
+                    (Math.min(e.clientX, window.innerWidth - 10) - startX)
+            );
+            const newHeight = Math.max(
+                250,
+                startHeight +
+                    (Math.min(e.clientY, window.innerHeight - 14) - startY)
+            );
+            this.portal.style.width = `${newWidth}px`;
+            this.portal.style.height = `${newHeight}px`;
+
+            this.logContainer.style.height = `${
+                newHeight - this.contentHeader.offsetHeight * 1.3
+            }px`;
+
+            this.portalWidth = newWidth;
+            this.portalHeight = newHeight;
+        };
+
+        const onMouseUp = (e) => {
+            this.resizer.innerHTML = `<img src="img/LHand.png" alt="resize" />`;
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        this.resizer.addEventListener("mousedown", onMouseDown);
     }
 
     _onMouseDown(e) {
@@ -114,6 +171,8 @@ export class OutputPortal {
         document.removeEventListener("mousedown", this._onMouseDown);
         document.removeEventListener("mouseup", this._onMouseUp);
         document.removeEventListener("mousemove", this._onMouseMove);
+
+        this.resizer.removeEventListener("mousedown", this._initResize);
 
         // Clean up properties
         Object.keys(this).forEach((key) => {
@@ -190,6 +249,8 @@ function showPortal(containerOutputPortal) {
     portal.classList.remove("portalMin");
     portal.style.left = `${containerOutputPortal.positionXY[0]}px`;
     portal.style.top = `${containerOutputPortal.positionXY[1]}px`;
+    portal.style.width = `${containerOutputPortal.portalWidth}px`;
+    portal.style.height = `${containerOutputPortal.portalHeight}px`;
     containerOutputPortal.contentHeader.style.cursor = "grab";
     contentBody.style.display = "flex";
 

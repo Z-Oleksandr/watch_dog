@@ -1,7 +1,6 @@
 .portal {
     width: 30vw;
     height: 40vh;
-    max-height: 400px;
     background: #617abf;
     border: 2px solid black;
     border-radius: 4.2px;
@@ -13,8 +12,8 @@
 }
 
 .portal.portalMin {
-    width: 250px;
-    height: 47px;
+    width: 250px !important;
+    height: 47px !important;
     position: fixed;
     top: auto;
     bottom: 4px;
@@ -34,6 +33,9 @@
     margin: 0;
     padding: 5px;
     color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .portal-body {
@@ -75,9 +77,33 @@
     user-select: none;
 }
 
+.portal-resizer {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+.portal-resizer img {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.portal-resizer:hover img {
+    width: 25px;
+    height: 25px;
+    top: -5px;
+    left: -5px;
+}
+
 .log-container {
+    flex: 1;
     overflow-y: auto;
-    max-height: 300px;
     font-family: monospace;
     white-space: pre-wrap;
     scrollbar-width: none; /* Firefox */
