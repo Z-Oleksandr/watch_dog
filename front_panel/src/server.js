@@ -9,9 +9,9 @@ app.use(express.static(__dirname));
 app.use(
     "/ws",
     createProxyMiddleware({
-        target: "wss://theblog.sbmedia.cloud:8999",
+        target: "wss://theblog.sbmedia.dev:8999",
         ws: true,
-    })
+    }),
 );
 
 app.use(express.static("dist"));
