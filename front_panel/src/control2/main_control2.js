@@ -40,6 +40,10 @@ if (isMobile() && window.innerWidth < 1080) {
     scale = 1;
 }
 
+// C = Connected, S = Standby, E = Error
+const INDICATOR_LABEL_LETTERS = ["C", "S", "E"];
+const INDICATOR_LABEL_OFFSET_X = 2.5;
+
 renderer.setAnimationLoop(animate);
 
 window.addEventListener("pointermove", onPointerMove);
@@ -247,6 +251,30 @@ async function loadIndicators() {
                         scene.add(model);
 
                         const mixer = new THREE.AnimationMixer(model);
+
+                        [-1, 1].forEach((side) => {
+                            const label = new Label(
+                                INDICATOR_LABEL_LETTERS[i],
+                                {
+                                    width: 120,
+                                    height: 120,
+                                    fontSize: 85,
+                                    backgroundColor: "#ffeeaa",
+                                    borderColor: "#000000",
+                                    textColor: "#000000",
+                                    borderWidth: 5,
+                                }
+                            );
+
+                            const labelMesh = label.getMesh();
+
+                            labelMesh.position.set(
+                                side * INDICATOR_LABEL_OFFSET_X * scale,
+                                2.69 * scale - i * 3 * scale,
+                                0
+                            );
+                            scene.add(labelMesh);
+                        });
 
                         addIndicator(i, model, mixer);
                         resolve();
