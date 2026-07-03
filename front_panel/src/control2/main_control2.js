@@ -40,9 +40,10 @@ if (isMobile() && window.innerWidth < 1080) {
     scale = 1;
 }
 
-// C = Connected, S = Standby, E = Error
-const INDICATOR_LABEL_LETTERS = ["C", "S", "E"];
-const INDICATOR_LABEL_OFFSET_X = 2.5;
+const INDICATOR_LABEL_TEXTS = ["conn", "stby", "error"];
+const INDICATOR_TOP_Y = 4.5;
+const INDICATOR_SPACING_Y = 4;
+const INDICATOR_LABEL_OFFSET_Y = 1.88;
 
 renderer.setAnimationLoop(animate);
 
@@ -240,7 +241,11 @@ async function loadIndicators() {
                     (gltf) => {
                         const model = gltf.scene;
                         model.rotation.set(1.069, 0, 0);
-                        model.position.set(0, 2.69 * scale - i * 3 * scale, 0);
+                        model.position.set(
+                            0,
+                            (INDICATOR_TOP_Y - i * INDICATOR_SPACING_Y) * scale,
+                            0
+                        );
                         const specific_scale = scale * 0.69;
                         model.scale.set(
                             specific_scale,
@@ -252,29 +257,27 @@ async function loadIndicators() {
 
                         const mixer = new THREE.AnimationMixer(model);
 
-                        [-1, 1].forEach((side) => {
-                            const label = new Label(
-                                INDICATOR_LABEL_LETTERS[i],
-                                {
-                                    width: 120,
-                                    height: 120,
-                                    fontSize: 85,
-                                    backgroundColor: "#ffeeaa",
-                                    borderColor: "#000000",
-                                    textColor: "#000000",
-                                    borderWidth: 5,
-                                }
-                            );
-
-                            const labelMesh = label.getMesh();
-
-                            labelMesh.position.set(
-                                side * INDICATOR_LABEL_OFFSET_X * scale,
-                                2.69 * scale - i * 3 * scale,
-                                0
-                            );
-                            scene.add(labelMesh);
+                        const label = new Label(INDICATOR_LABEL_TEXTS[i], {
+                            width: 260,
+                            height: 92,
+                            fontSize: 63,
+                            backgroundColor: "#ffeeaa",
+                            borderColor: "#000000",
+                            textColor: "#000000",
+                            borderWidth: 5,
                         });
+
+                        const labelMesh = label.getMesh();
+
+                        labelMesh.position.set(
+                            0,
+                            (INDICATOR_TOP_Y -
+                                i * INDICATOR_SPACING_Y -
+                                INDICATOR_LABEL_OFFSET_Y) *
+                                scale,
+                            0
+                        );
+                        scene.add(labelMesh);
 
                         addIndicator(i, model, mixer);
                         resolve();
