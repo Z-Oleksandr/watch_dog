@@ -6,10 +6,10 @@ export class Label {
         this.width = options.width || 200;
         this.height = options.height || 100;
         this.fontSize = options.fontSize || 18;
-        this.backgroundColor = options.backgroundColor || "#ffffff";
-        this.borderColor = options.borderColor || "#000000";
+        this.backgroundColor = options.backgroundColor || "#14120c";
+        this.borderColor = options.borderColor || "#c9a227";
         this.borderWidth = options.borderWidth || 4;
-        this.textColor = options.textColor || "#000000";
+        this.textColor = options.textColor || "#f2e8c9";
 
         this.canvas = document.createElement("canvas");
         this.canvas.width = this.width;
@@ -29,6 +29,9 @@ export class Label {
         this.mesh = new THREE.Mesh(geometry, material);
 
         this.drawText();
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => this.drawText());
+        }
     }
 
     drawText() {
@@ -42,14 +45,27 @@ export class Label {
         if (this.borderWidth > 0) {
             ctx.strokeStyle = this.borderColor;
             ctx.lineWidth = this.borderWidth;
-            ctx.strokeRect(0, 0, this.width, this.height);
+            ctx.strokeRect(
+                this.borderWidth / 2,
+                this.borderWidth / 2,
+                this.width - this.borderWidth,
+                this.height - this.borderWidth
+            );
+            const inset = this.borderWidth * 2.5;
+            ctx.lineWidth = Math.max(1, this.borderWidth / 3);
+            ctx.strokeRect(
+                inset,
+                inset,
+                this.width - inset * 2,
+                this.height - inset * 2
+            );
         }
 
         ctx.fillStyle = this.textColor;
-        ctx.font = `800 ${this.fontSize}px orbitron`;
+        ctx.font = `600 ${this.fontSize}px 'Josefin Sans', sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(this.text, this.width / 2, this.height / 2);
+        ctx.fillText(this.text, this.width / 2, this.height / 2 + this.fontSize * 0.08);
 
         this.texture.needsUpdate = true;
     }

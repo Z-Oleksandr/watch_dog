@@ -11,6 +11,7 @@ use lazy_static::lazy_static;
 use crate::helpers::{is_initialized_disk, is_not_pidor};
 
 use crate::docker_mon::init_docker_mon;
+use crate::temperatures::TempSensor;
 
 #[derive(Serialize)]
 pub struct SystemData {
@@ -19,6 +20,7 @@ pub struct SystemData {
     num_disks: u32,
     disks_space: Vec<u64>,
     init_ram_total: u64,
+    temp_sensors: Vec<TempSensor>,
 }
 
 #[derive(Serialize)]
@@ -37,7 +39,7 @@ lazy_static! {
     pub static ref DISK_REGISTER: Mutex<HashSet<String>> = Mutex::new(HashSet::new());
 }
 
-pub fn get_system_data() -> SystemData {
+pub fn get_system_data(temp_sensors: Vec<TempSensor>) -> SystemData {
     let mut sys = System::new_all();
 
     // Get disk data
@@ -70,6 +72,7 @@ pub fn get_system_data() -> SystemData {
         num_disks: disk_count,
         disks_space,
         init_ram_total: sys.total_memory() / 1_000_000,
+        temp_sensors,
     }
 }
 

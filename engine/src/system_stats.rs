@@ -1,5 +1,5 @@
 use sysinfo::{
-    Disks, Networks,
+    Components, Disks, Networks,
     System
 };
 
@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::helpers::is_initialized_disk;
 use crate::system_info::DISK_REGISTER;
+use crate::temperatures::{read_temperatures, TempSensorRegistry};
 
 #[derive(Serialize)]
 pub struct SystemStats {
@@ -18,9 +19,15 @@ pub struct SystemStats {
     pub network_received: u64,
     pub network_transmitted: u64,
     uptime: u64,
+    temperatures: Vec<f32>,
 }
 
-pub fn get_system_stats(sys: &mut System, networks: &mut Networks) -> SystemStats {
+pub fn get_system_stats(
+    sys: &mut System,
+    networks: &mut Networks,
+    components: &mut Components,
+    temp_registry: &TempSensorRegistry
+) -> SystemStats {
     sys.refresh_all();
 
     // CPU usage data
@@ -67,6 +74,8 @@ pub fn get_system_stats(sys: &mut System, networks: &mut Networks) -> SystemStat
 
     let uptime = System::uptime();
 
+    let temperatures = read_temperatures(components, temp_registry);
+
     return SystemStats {
         data_type: 1,
         cpu_usage,
@@ -75,6 +84,7 @@ pub fn get_system_stats(sys: &mut System, networks: &mut Networks) -> SystemStat
         disks_used_space,
         network_received,
         network_transmitted,
-        uptime
+        uptime,
+        temperatures
     }
 }

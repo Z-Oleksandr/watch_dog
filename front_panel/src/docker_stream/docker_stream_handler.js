@@ -33,9 +33,7 @@ export class ContainerOutputPortal {
 
         // Add content to portal and portal to page
         this.portal.appendChild(this.content);
-        document
-            .getElementsByClassName("thatsAllFolks")[0]
-            .appendChild(this.portal);
+        document.body.appendChild(this.portal);
 
         // Util portal data
         this.portalWidth = this.portal.offsetWidth;

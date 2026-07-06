@@ -4,56 +4,48 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>System_Monitor</title>
-        <script src="/gauges/gauge.min.js"></script>
-        <link rel="stylesheet" href="/css/style.css" />
+        <link rel="stylesheet" href="/css/deco.css" />
         <link rel="stylesheet" href="/css/control_window_style.css" />
         <link rel="stylesheet" href="/css/chart_style.css" />
         <link rel="stylesheet" href="/css/portals.css" />
         <link rel="shortcut icon" href="/favicon.png" type="image/x-icon" />
     </head>
     <body>
-        <div class="thatsAllFolks">
-            <div class="container">
-                <div class="cSec section">
-                    <div id="cpu"></div>
-                </div>
-                <div class="center section">
-                    <table class="centerTable">
-                        <tr class="ramandnet centerSec">
-                            <td>
-                                <div class="ramSubSection">
-                                    <div id="ram"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="netSubSection">
-                                    <div id="network"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="info centerSec centerSquares">
-                            <td>
-                                <div class="display roundness"></div>
-                            </td>
-                        </tr>
-                        <tr class="controls centerSec centerSquares">
-                            <td>
-                                <div class="display_2 roundness"></div>
-                                <div class="control2 roundness">
-                                    <div class="cover"></div>
-                                    <canvas id="control2"></canvas>
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="dSec section">
-                    <div class="diskSubSection">
-                        <p class="gTitle">Storage:</p>
-                        <div id="disks"></div>
-                    </div>
-                </div>
+        <div id="boot-overlay">
+            <div class="boot-sunburst"></div>
+            <div class="boot-frame">
+                <div class="boot-rule"></div>
+                <h1 class="boot-title">WATCH_DOG</h1>
+                <p class="boot-subtitle">SYSTEM MONITOR</p>
+                <p class="boot-host"></p>
+                <div class="boot-rule"></div>
             </div>
+        </div>
+        <div class="container">
+            <aside class="col-left section deco-panel">
+                <div id="cpu-cluster"></div>
+                <div id="temp-cluster"></div>
+            </aside>
+            <main class="col-center">
+                <div class="deco-crest"></div>
+                <div class="vitals-row deco-panel">
+                    <div id="ram-gauge"></div>
+                    <div id="net-down-gauge"></div>
+                    <div id="net-up-gauge"></div>
+                </div>
+                <div class="display deco-panel plaque" data-plaque="specifications"></div>
+                <div class="display_2 deco-panel plaque" data-plaque="teleprinter"></div>
+                <div class="control2 deco-panel plaque" data-plaque="controls">
+                    <div class="cover">
+                        <div class="gate gate-left"></div>
+                        <div class="gate gate-right"></div>
+                    </div>
+                    <canvas id="control2"></canvas>
+                </div>
+            </main>
+            <aside class="col-right section deco-panel">
+                <div id="storage-cluster"></div>
+            </aside>
         </div>
         <script type="module" src="/main.js"></script>
     </body>

@@ -5,11 +5,13 @@
     transform: translate(-50%, -50%);
     padding: 2vw;
 
-    border: 2px solid black;
-    border-radius: 5px;
+    border-radius: 3px;
     width: 90vw;
     height: 79vh;
-    background-color: white;
+    background:
+        linear-gradient(180deg, rgba(232, 201, 106, 0.05), transparent 14%),
+        var(--charcoal);
+    box-shadow: var(--panel-border);
 
     display: grid;
     align-items: center;
@@ -23,18 +25,25 @@
 #closeChart {
     position: absolute;
     top: 5px;
-    right: 9px;
+    right: 12px;
     font-size: x-large;
     cursor: pointer;
     z-index: 1;
+    color: var(--brass);
+}
+
+#closeChart:hover {
+    color: var(--ruby);
 }
 
 #chartTitle {
     position: absolute;
-    top: 5px;
-    left: 9px;
+    top: 8px;
+    left: 12px;
     font-size: large;
+    letter-spacing: 0.2em;
     z-index: 1;
+    color: var(--brass-light);
 }
 
 .chartContainer {
