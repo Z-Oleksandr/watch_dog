@@ -1,10 +1,11 @@
 import * as THREE from "three";
 
 export class Indicator {
-    constructor(number, model, mixer) {
+    constructor(number, model, mixer, label) {
         this.number = number;
         this.model = model;
         this.mixer = mixer;
+        this.label = label;
         this.state = false;
         this.blinking_state = false;
         this.interval;
@@ -52,8 +53,8 @@ export function updateIndiMixers(delta) {
     });
 }
 
-export function addIndicator(i, model, mixer) {
-    const indicator = new Indicator(i, model, mixer);
+export function addIndicator(i, model, mixer, label) {
+    const indicator = new Indicator(i, model, mixer, label);
     indicators.push(indicator);
     indicators.sort((a, b) => a.number - b.number);
 }

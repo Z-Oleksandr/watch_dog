@@ -44,6 +44,77 @@ const INDICATOR_LABEL_TEXTS = ["conn", "stby", "error"];
 const INDICATOR_TOP_Y = 4.5;
 const INDICATOR_SPACING_Y = 4;
 const INDICATOR_LABEL_OFFSET_Y = 1.88;
+// Layout used when labels are hidden (pre-label spacing)
+const INDICATOR_COMPACT_TOP_Y = 2.69;
+const INDICATOR_COMPACT_SPACING_Y = 3;
+
+// Labels are hidden when the labeled indicator stack does not fit the viewport
+let indicatorContentBox = null;
+let indicatorLabelsVisible = null; // null until the first fit check applies a layout
+const LABEL_FIT_HYSTERESIS = 0.02; // NDC units
+
+function measureIndicatorContent() {
+    const box = new THREE.Box3();
+    indicators.forEach((indi) => {
+        indi.model.updateWorldMatrix(true, true);
+        indi.label.getMesh().updateWorldMatrix(true, true);
+        box.expandByObject(indi.model, true);
+        box.expandByObject(indi.label.getMesh(), true);
+    });
+    indicatorContentBox = box;
+}
+
+const _corner = new THREE.Vector3();
+function getProjectedYRange(box) {
+    camera.updateMatrixWorld();
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let ix = 0; ix < 2; ix++) {
+        for (let iy = 0; iy < 2; iy++) {
+            for (let iz = 0; iz < 2; iz++) {
+                _corner
+                    .set(
+                        ix ? box.max.x : box.min.x,
+                        iy ? box.max.y : box.min.y,
+                        iz ? box.max.z : box.min.z
+                    )
+                    .project(camera);
+                minY = Math.min(minY, _corner.y);
+                maxY = Math.max(maxY, _corner.y);
+            }
+        }
+    }
+    return { minY, maxY };
+}
+
+function updateIndicatorLabelVisibility() {
+    if (!indicatorContentBox || indicatorContentBox.isEmpty()) return;
+
+    const { minY, maxY } = getProjectedYRange(indicatorContentBox);
+    const overflows = maxY > 1 || minY < -1;
+    const fitsWithMargin =
+        maxY <= 1 - LABEL_FIT_HYSTERESIS && minY >= -1 + LABEL_FIT_HYSTERESIS;
+
+    if (indicatorLabelsVisible === null) {
+        setIndicatorLabelsVisible(!overflows);
+    } else if (indicatorLabelsVisible && overflows) {
+        setIndicatorLabelsVisible(false);
+    } else if (!indicatorLabelsVisible && fitsWithMargin) {
+        setIndicatorLabelsVisible(true);
+    }
+}
+
+function setIndicatorLabelsVisible(visible) {
+    const topY = visible ? INDICATOR_TOP_Y : INDICATOR_COMPACT_TOP_Y;
+    const spacingY = visible
+        ? INDICATOR_SPACING_Y
+        : INDICATOR_COMPACT_SPACING_Y;
+    indicators.forEach((indi) => {
+        indi.label.getMesh().visible = visible;
+        indi.model.position.y = (topY - indi.number * spacingY) * scale;
+    });
+    indicatorLabelsVisible = visible;
+}
 
 renderer.setAnimationLoop(animate);
 
@@ -54,29 +125,20 @@ window.addEventListener("touchend", handleClick);
 
 // const controls = new OrbitControls(camera, renderer.domElement);
 
-window.addEventListener(
-    "resize",
-    () => {
-        onWindowResize;
-    },
-    false
-);
 function onWindowResize() {
     const width = control2_window.clientWidth;
     const height = control2_window.clientHeight;
 
-    camera = new THREE.OrthographicCamera(
-        width / -30,
-        width / 30,
-        height / 30,
-        height / -30,
-        0.01,
-        1000
-    );
+    camera.left = width / -30;
+    camera.right = width / 30;
+    camera.top = height / 30;
+    camera.bottom = height / -30;
     camera.updateProjectionMatrix();
-    renderer.setSize(control2_window.clientWidth, control2_window.clientHeight);
-    renderer.render(scene, camera);
+    renderer.setSize(width, height);
+    updateIndicatorLabelVisibility();
 }
+
+new ResizeObserver(onWindowResize).observe(control2_window);
 
 // Time
 const clock = new THREE.Clock();
@@ -268,6 +330,7 @@ async function loadIndicators() {
                         });
 
                         const labelMesh = label.getMesh();
+                        labelMesh.visible = false;
 
                         labelMesh.position.set(
                             0,
@@ -279,7 +342,7 @@ async function loadIndicators() {
                         );
                         scene.add(labelMesh);
 
-                        addIndicator(i, model, mixer);
+                        addIndicator(i, model, mixer, label);
                         resolve();
                     },
                     null,
@@ -309,6 +372,8 @@ loadButtons().then(() => {
 });
 
 loadIndicators().then(() => {
+    measureIndicatorContent();
+    updateIndicatorLabelVisibility();
     isWSConnected(getWS());
 });
 
