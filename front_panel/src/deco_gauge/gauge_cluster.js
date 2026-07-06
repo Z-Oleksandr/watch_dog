@@ -70,11 +70,7 @@ export class GaugeCluster {
             const badge = document.createElement("span");
             badge.className = "cluster-badge";
             badge.textContent = count;
-            const diamond = document.createElement("span");
-            diamond.className = "cluster-diamond";
-            diamond.textContent = "◆";
             heading.appendChild(badge);
-            this.header.appendChild(diamond);
             this.header.classList.add("cluster-toggle");
             this.header.setAttribute("role", "button");
             this.header.setAttribute("tabindex", "0");

@@ -210,10 +210,38 @@ body {
 }
 
 .deco-crest {
-    height: 3.4vh;
+    position: relative;
+    height: 5vh;
     width: min(42vw, 520px);
     margin: 0 auto;
-    background: url("/img/deco_crest.svg") center bottom / contain no-repeat;
+    background:
+        radial-gradient(circle at 50% 100%, var(--brass-light) 0 4px, transparent 5px),
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            var(--brass-dark) 16%,
+            var(--brass-dark) 42%,
+            transparent 46%,
+            transparent 54%,
+            var(--brass-dark) 58%,
+            var(--brass-dark) 84%,
+            transparent 100%
+        ) 50% 100% / 100% 1px no-repeat;
+}
+
+.deco-crest::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-conic-gradient(
+            from -1.5deg at 50% 100%,
+            rgba(201, 162, 39, 0.55) 0deg 3deg,
+            transparent 3deg 12deg
+        ),
+        radial-gradient(circle 4.6vh at 50% 100%, rgba(232, 201, 106, 0.14), transparent 75%);
+    mask-image: radial-gradient(circle 4.6vh at 50% 100%, black 55%, transparent 97%);
+    -webkit-mask-image: radial-gradient(circle 4.6vh at 50% 100%, black 55%, transparent 97%);
 }
 
 .plaque::before {
@@ -316,18 +344,6 @@ body {
     opacity: 0.8;
 }
 
-.cluster-diamond {
-    color: var(--brass);
-    font-size: 0.7rem;
-    transition: transform 0.35s ease;
-}
-
-.deco-cluster.expanded .cluster-diamond {
-    transform: rotate(180deg) scale(1.25);
-    color: var(--glow);
-    text-shadow: 0 0 6px var(--glow);
-}
-
 .cluster-toggle {
     cursor: pointer;
 }
@@ -383,7 +399,7 @@ body {
 /* ---------- displays ---------- */
 
 .display {
-    height: 20vh;
+    height: 19.5vh;
     display: flex;
     flex-wrap: wrap;
     padding: 1.6vh 1.2vw 0.8vh;
@@ -443,7 +459,7 @@ body {
 }
 
 .display_2 {
-    height: 20vh;
+    height: 19.5vh;
     padding: 1.2vh 1vw;
     overflow: hidden;
 }
