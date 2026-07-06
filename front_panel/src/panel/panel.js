@@ -31,6 +31,25 @@ function tempZones(critical) {
     ];
 }
 
+function buildUnavailableSection(container, title, message) {
+    const root = document.createElement("section");
+    root.className = "deco-cluster";
+    const header = document.createElement("header");
+    header.className = "cluster-header";
+    const chevron_l = document.createElement("span");
+    chevron_l.className = "cluster-chevrons";
+    const heading = document.createElement("h2");
+    heading.textContent = title;
+    const chevron_r = document.createElement("span");
+    chevron_r.className = "cluster-chevrons";
+    header.append(chevron_l, heading, chevron_r);
+    const note = document.createElement("p");
+    note.className = "cluster-unavailable";
+    note.textContent = message;
+    root.append(header, note);
+    container.appendChild(root);
+}
+
 function groupSensors(sensors) {
     const groups = new Map();
     sensors.forEach((sensor, index) => {
@@ -84,7 +103,11 @@ export function initPanel(data) {
     const sensors = data.temp_sensors || [];
     const temp_container = document.getElementById("temp-cluster");
     if (sensors.length === 0) {
-        temp_container.style.display = "none";
+        buildUnavailableSection(
+            temp_container,
+            "Temperature",
+            "sensors not available"
+        );
     } else {
         temp_groups = groupSensors(sensors);
         const hottest_critical = Math.max(

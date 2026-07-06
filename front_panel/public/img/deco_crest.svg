@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 34" preserveAspectRatio="xMidYMax meet">
+<defs>
+<linearGradient id="rl" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#8a6d1d"/><stop offset="1" stop-color="#8a6d1d" stop-opacity="0"/></linearGradient>
+<linearGradient id="rr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d1d"/><stop offset="1" stop-color="#8a6d1d" stop-opacity="0"/></linearGradient>
+</defs>
+<rect x="10" y="32" width="238" height="1" fill="url(#rl)"/>
+<rect x="272" y="32" width="238" height="1" fill="url(#rr)"/>
+<polygon points="251.3,30.43 240.27,29.7 250.94,32.6" fill="#c9a227"/>
+<polygon points="251.99,28.75 232.93,22.61 251.2,30.8" fill="#c9a227"/>
+<polygon points="253,27.24 243.13,22.25 251.82,29.09" fill="#c9a227"/>
+<polygon points="254.29,25.96 239.14,12.85 252.76,27.54" fill="#c9a227"/>
+<polygon points="255.81,24.96 248.67,16.52 254,26.21" fill="#c9a227"/>
+<polygon points="257.5,24.29 248.67,6.31 255.47,25.15" fill="#c9a227"/>
+<polygon points="259.28,23.96 256.01,13.4 257.13,24.4" fill="#c9a227"/>
+<polygon points="261.1,24 260,4 258.9,24" fill="#c9a227"/>
+<polygon points="262.87,24.4 263.99,13.4 260.72,23.96" fill="#c9a227"/>
+<polygon points="264.53,25.15 271.33,6.31 262.5,24.29" fill="#c9a227"/>
+<polygon points="266,26.21 271.33,16.52 264.19,24.96" fill="#c9a227"/>
+<polygon points="267.24,27.54 280.86,12.85 265.71,25.96" fill="#c9a227"/>
+<polygon points="268.18,29.09 276.87,22.25 267,27.24" fill="#c9a227"/>
+<polygon points="268.8,30.8 287.07,22.61 268.01,28.75" fill="#c9a227"/>
+<polygon points="269.06,32.6 279.73,29.7 268.7,30.43" fill="#c9a227"/>
+<path d="M 253.5 33 A 6.5 6.5 0 0 1 266.5 33 Z" fill="#e8c96a"/>
+</svg>

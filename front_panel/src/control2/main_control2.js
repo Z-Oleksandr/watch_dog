@@ -30,8 +30,8 @@ const control2_window = document.getElementsByClassName("control2")[0];
 let { camera, scene, renderer, loader, raycaster, pointer } = init();
 
 const INDICATOR_LABEL_TEXTS = ["conn", "stby", "error"];
-const INDICATOR_TOP_Y = 4.5;
-const INDICATOR_SPACING_Y = 4;
+const INDICATOR_TOP_Y = 3.9;
+const INDICATOR_SPACING_Y = 3.7;
 const INDICATOR_LABEL_OFFSET_Y = 1.88;
 
 // Pre-load fallback; refined from the measured scene bounds once models load

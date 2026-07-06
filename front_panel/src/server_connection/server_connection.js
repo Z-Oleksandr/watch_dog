@@ -78,9 +78,10 @@ export function max_net_gauges(state) {
     setNetTesting(state);
 }
 
-// Dev mocks: ?mock_temps=1 and/or ?mock_disks=N
+// Dev mocks: ?mock_temps=1|none and/or ?mock_disks=N
 const mock_params = new URLSearchParams(window.location.search);
 const MOCK_TEMPS = mock_params.get("mock_temps") === "1";
+const MOCK_NO_TEMPS = mock_params.get("mock_temps") === "none";
 const MOCK_DISKS = Math.min(16, Number(mock_params.get("mock_disks")) || 0);
 let mock_tick = 0;
 
@@ -94,11 +95,14 @@ const MOCK_SENSORS = [
 ];
 
 function applyMocks(data) {
-    if (!MOCK_TEMPS && !MOCK_DISKS) return data;
+    if (!MOCK_TEMPS && !MOCK_NO_TEMPS && !MOCK_DISKS) return data;
 
     if (data.data_type == 0) {
         if (MOCK_TEMPS) {
             data.temp_sensors = MOCK_SENSORS;
+        }
+        if (MOCK_NO_TEMPS) {
+            data.temp_sensors = [];
         }
         if (MOCK_DISKS) {
             data.num_disks = MOCK_DISKS;
@@ -115,6 +119,9 @@ function applyMocks(data) {
             data.temperatures = MOCK_SENSORS.map(
                 (_, i) => 62 + 22 * Math.sin(mock_tick / 8 + i * 1.3)
             );
+        }
+        if (MOCK_NO_TEMPS) {
+            data.temperatures = [];
         }
         if (MOCK_DISKS) {
             data.disks_used_space = Array.from(

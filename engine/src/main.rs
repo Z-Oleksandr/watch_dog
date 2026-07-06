@@ -242,6 +242,9 @@ async fn handle_connection(
 
     let mut components = Components::new_with_refreshed_list();
     let temp_registry = init_temp_sensors(&components);
+    if temp_registry.sensors.is_empty() {
+        println!("No temperature sensors available on this platform; reporting none to {}", addr);
+    }
 
     // Send static system data
     let system_data_json = match serde_json::to_string(
