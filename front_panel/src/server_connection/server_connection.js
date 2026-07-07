@@ -5,7 +5,6 @@ import { get_container_stream_register } from "../functions/docker";
 import { write_container_log_to_portal } from "../docker_stream/docker_stream_handler";
 import { initPanel, updateStats, zeroAll, setNetTesting } from "../panel/panel";
 import { renderSystemInfo } from "../panel/info_display";
-import { bootOnSystemData, bootOnSystemInfo } from "../boot/boot_sequence";
 
 let ram_max_mb = 1;
 
@@ -22,11 +21,9 @@ export function server_communication(ws) {
         if (data_stream.data_type == 0) {
             ram_max_mb = data_stream.init_ram_total;
             initPanel(data_stream);
-            bootOnSystemData();
         }
 
         if (data_stream.data_type == 2) {
-            bootOnSystemInfo(data_stream);
             renderSystemInfo(data_stream);
         }
 

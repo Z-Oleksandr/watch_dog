@@ -1,8 +1,10 @@
 import { formatSecondsToTime } from "../functions/format";
 
 let initialized = false;
+let greeting_el = null;
 
 export function showGreeting() {
+    if (greeting_el) return greeting_el;
     const display = document.getElementsByClassName("display")[0];
     const container = document.createElement("div");
     container.classList.add("displayGreetingContainer");
@@ -14,6 +16,7 @@ export function showGreeting() {
     sub.textContent = "SYSTEM MONITOR";
     container.append(greeting, sub);
     display.appendChild(container);
+    greeting_el = container;
     return container;
 }
 
@@ -26,6 +29,7 @@ export function renderSystemInfo(data) {
 
     setTimeout(() => {
         greeting.remove();
+        greeting_el = null;
 
         const column1 = document.createElement("div");
         const column2 = document.createElement("div");

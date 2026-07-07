@@ -137,4 +137,12 @@ export class GaugeCluster {
             this.member_gauges.forEach((gauge) => gauge.set(gauge.opts.min));
         }
     }
+
+    destroy() {
+        this.summary_gauge.destroy();
+        if (this.member_gauges.length > 1) {
+            this.member_gauges.forEach((gauge) => gauge.destroy());
+        }
+        this.root.remove();
+    }
 }

@@ -16,6 +16,7 @@ let cpu_distribution = [];
 let temp_groups = [];
 let net_testing = false;
 let initialized = false;
+let temp_placard = null;
 
 function distributeThreads(total, clusters) {
     const base = Math.floor(total / clusters);
@@ -29,6 +30,60 @@ function tempZones(critical) {
         { from: 0.7 * critical, to: 0.85 * critical, color: DECO.amber },
         { from: 0.85 * critical, to: critical, color: DECO.ruby },
     ];
+}
+
+function buildNetGauges() {
+    return ["net-down-gauge", "net-up-gauge"].map(
+        (id, i) =>
+            new DecoGauge(document.getElementById(id), {
+                label: i === 0 ? "Down" : "Up",
+                unit: "Mb",
+                max: NET_BASE_MAX,
+                zones: netZones(NET_BASE_MAX),
+                format: (v) => Math.round(v),
+            })
+    );
+}
+
+function teardownPanel() {
+    [cpu_cluster, temp_cluster, storage_cluster].filter(Boolean).forEach((c) =>
+        c.destroy()
+    );
+    [ram_gauge, ...net_gauges].filter(Boolean).forEach((g) => g.destroy());
+    if (temp_placard) temp_placard.remove();
+    cpu_cluster = temp_cluster = storage_cluster = ram_gauge = temp_placard = null;
+    net_gauges = [];
+}
+
+export function initDefaultPanel() {
+    cpu_cluster = new GaugeCluster(document.getElementById("cpu-cluster"), {
+        id: "cpu",
+        title: "CPU",
+        summary: { label: "CPU", unit: "%", max: 100, format: (v) => Math.round(v) },
+        members: [{}],
+    });
+
+    temp_placard = buildUnavailableSection(
+        document.getElementById("temp-cluster"),
+        "Temperature",
+        "awaiting connection"
+    );
+
+    ram_gauge = new DecoGauge(document.getElementById("ram-gauge"), {
+        label: "RAM",
+        unit: "%",
+        max: 100,
+        format: (v) => Math.round(v),
+    });
+
+    net_gauges = buildNetGauges();
+
+    storage_cluster = new GaugeCluster(document.getElementById("storage-cluster"), {
+        id: "storage",
+        title: "Storage",
+        summary: { label: "Disk", unit: "%", max: 100, format: (v) => Math.round(v) },
+        members: [{}],
+    });
 }
 
 function buildUnavailableSection(container, title, message) {
@@ -48,6 +103,7 @@ function buildUnavailableSection(container, title, message) {
     note.textContent = message;
     root.append(header, note);
     container.appendChild(root);
+    return root;
 }
 
 function groupSensors(sensors) {
@@ -80,6 +136,7 @@ function netZones(max) {
 export function initPanel(data) {
     if (initialized) return;
     initialized = true;
+    teardownPanel();
 
     const num_cpus = data.num_cpus;
     const cluster_count = Math.min(window.innerWidth < 768 ? 2 : 4, num_cpus);
@@ -103,7 +160,7 @@ export function initPanel(data) {
     const sensors = data.temp_sensors || [];
     const temp_container = document.getElementById("temp-cluster");
     if (sensors.length === 0) {
-        buildUnavailableSection(
+        temp_placard = buildUnavailableSection(
             temp_container,
             "Temperature",
             "sensors not available"
@@ -146,16 +203,7 @@ export function initPanel(data) {
         format: (v) => Math.round(v),
     });
 
-    net_gauges = ["net-down-gauge", "net-up-gauge"].map(
-        (id, i) =>
-            new DecoGauge(document.getElementById(id), {
-                label: i === 0 ? "Down" : "Up",
-                unit: "Mb",
-                max: NET_BASE_MAX,
-                zones: netZones(NET_BASE_MAX),
-                format: (v) => Math.round(v),
-            })
-    );
+    net_gauges = buildNetGauges();
 
     const disk_members = data.disks_space.map((space, i) => ({
         label: `Disk ${i}`,
