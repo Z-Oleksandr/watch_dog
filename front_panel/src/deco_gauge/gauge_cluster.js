@@ -125,9 +125,7 @@ export class GaugeCluster {
     sweep() {
         this.summary_gauge.sweep();
         if (this.member_gauges.length > 1) {
-            this.member_gauges.forEach((gauge, i) => {
-                setTimeout(() => gauge.sweep(), i * 60);
-            });
+            this.member_gauges.forEach((gauge) => gauge.sweep());
         }
     }
 

@@ -229,6 +229,8 @@ export function initPanel(data) {
                   },
         members: disk_members,
     });
+
+    sweepAll();
 }
 
 export function isPanelInitialized() {
@@ -279,11 +281,10 @@ export function updateStats(data) {
 }
 
 export function sweepAll() {
-    const clusters = [cpu_cluster, temp_cluster, storage_cluster].filter(Boolean);
-    clusters.forEach((cluster, i) => setTimeout(() => cluster.sweep(), i * 120));
-    [ram_gauge, ...net_gauges].filter(Boolean).forEach((gauge, i) => {
-        setTimeout(() => gauge.sweep(), 60 + i * 60);
-    });
+    [cpu_cluster, temp_cluster, storage_cluster].filter(Boolean).forEach((c) =>
+        c.sweep()
+    );
+    [ram_gauge, ...net_gauges].filter(Boolean).forEach((g) => g.sweep());
 }
 
 export function zeroAll() {

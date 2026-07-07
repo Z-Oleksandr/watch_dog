@@ -267,7 +267,7 @@ const buttons_ready = loadButtons().then(() => {
 });
 
 const indicators_ready = loadIndicators().then(() => {
-    isWSConnected(getWS());
+    getWS().then((ws) => isWSConnected(ws));
 });
 
 Promise.all([toggles_ready, buttons_ready, indicators_ready]).then(

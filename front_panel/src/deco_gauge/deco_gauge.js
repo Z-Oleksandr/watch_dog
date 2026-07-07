@@ -95,11 +95,11 @@ export class DecoGauge {
             from: this.opts.min,
             to: this.opts.max,
             start: performance.now(),
-            duration: 900,
+            duration: 1035,
             then: {
                 from: this.opts.max,
                 to: this.opts.min,
-                duration: 1100,
+                duration: 1265,
             },
         };
         animate(this);
