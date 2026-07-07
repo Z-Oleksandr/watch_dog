@@ -35,7 +35,7 @@ while IFS= read -r hash; do
         patch=1
         fixes+=("$subject")
     fi
-done < <(git rev-list --no-merges "$range")
+done < <(git rev-list "$range")
 
 IFS=. read -r v_major v_minor v_patch <<< "$previous"
 if [ "$major" = 1 ]; then

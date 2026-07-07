@@ -18,8 +18,9 @@ commit messages since the last `v*` tag (`scripts/compute_version.sh`).
 | anything else (`chore:`, `docs:`, `refactor:`, non-conventional) | none |
 
 If no commit since the last tag warrants a bump, **no release is created**.
-Merges count by their individual commits (merge commits themselves are ignored),
-so squash-merges need a conventional subject to release.
+Merge commits count too: give a PR's merge (or squash) commit a conventional
+subject to control the bump — GitHub's default "Merge pull request #NN"
+subjects match nothing and are ignored.
 
 ## What a release produces
 
