@@ -1,5 +1,6 @@
 import { indicators } from "./control2/indicator";
 import "./control2/main_control2";
+import { startInitSequence } from "./boot/boot_sequence";
 import { setResetState } from "./button_functions/button_functions";
 import { getDisplay2 } from "./dsiplay2/display2";
 import {
@@ -19,16 +20,6 @@ export function isMobile() {
 }
 
 const display2 = getDisplay2();
-
-let reload_in_progress = false;
-
-window.addEventListener("resize", function () {
-    if (!reload_in_progress) {
-        reload_in_progress = true;
-        alert("Window resized! Reloading the page...");
-    }
-    location.reload();
-});
 
 // WebSocket
 export function getWS() {
@@ -60,6 +51,7 @@ export function resetWS(newWS) {
     setTimeout(() => {
         setResetState(false);
         if (ws.readyState === WebSocket.OPEN) {
+            startInitSequence();
             display2.write_line("WebSocket connection reset complete.");
             display2.write_line("WS connection at: " + connectionAt);
         } else {
@@ -92,6 +84,7 @@ setTimeout(() => {
 
 ws.onopen = function () {
     console.log("WebSocket connection esablished");
+    startInitSequence();
     server_communication(ws);
     setTimeout(() => {
         isWSConnected(ws);

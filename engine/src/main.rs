@@ -3,7 +3,7 @@ use std::{
     fs::metadata, sync::Arc,
     collections::HashMap,
 };
-use sysinfo::{Networks, System};
+use sysinfo::{Components, Networks, System};
 use tokio::{
     net::{TcpListener, TcpStream}, time,
     sync::Mutex, fs::read_to_string,
@@ -30,6 +30,9 @@ use logger::log_stats;
 
 mod send_log_data;
 use send_log_data::send_log_data;
+
+mod temperatures;
+use temperatures::init_temp_sensors;
 
 mod docker_mon;
 
@@ -237,30 +240,48 @@ async fn handle_connection(
         handle_read(read, write_clone, log_list, connection_channels_clone).await;
     });
 
+    let mut components = Components::new_with_refreshed_list();
+    let temp_registry = init_temp_sensors(&components);
+    if temp_registry.sensors.is_empty() {
+        println!("No temperature sensors available on this platform; reporting none to {}", addr);
+    }
+
     // Send static system data
-    let system_data_json = serde_json::to_string(
-        &get_system_data()
-    ).unwrap();
+    let system_data_json = match serde_json::to_string(
+        &get_system_data(temp_registry.sensors.clone())
+    ) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("Failed to serialize system data for {}: {}", addr, e);
+            return;
+        }
+    };
 
     {
         let mut write = write.lock().await;
-        write
-            .send(Message::Text(system_data_json))
-            .await
-            .expect("Error sending static data");
+        if let Err(e) = write.send(Message::Text(system_data_json)).await {
+            eprintln!("Error sending static data to {}: {}", addr, e);
+            return;
+        }
     }
 
     // Send general system info
-    let system_info_json = serde_json::to_string(
+    let system_info_json = match serde_json::to_string(
         &get_system_info().await
-    ).unwrap();
+    ) {
+        Ok(json) => json,
+        Err(e) => {
+            eprintln!("Failed to serialize system info for {}: {}", addr, e);
+            return;
+        }
+    };
 
     {
         let mut write = write.lock().await;
-        write
-            .send(Message::Text(system_info_json))
-            .await
-            .expect("Error sending system info");
+        if let Err(e) = write.send(Message::Text(system_info_json)).await {
+            eprintln!("Error sending system info to {}: {}", addr, e);
+            return;
+        }
     }
 
     time::sleep(Duration::from_secs(5)).await;
@@ -271,9 +292,16 @@ async fn handle_connection(
     // Live System Stats stream
     loop {
         // Serialize stats to JSON
-        let stats_json = serde_json::to_string(
-            &get_system_stats(&mut sys, &mut networks)
-        ).unwrap();
+        let stats_json = match serde_json::to_string(
+            &get_system_stats(&mut sys, &mut networks, &mut components, &temp_registry)
+        ) {
+            Ok(json) => json,
+            Err(e) => {
+                eprintln!("Failed to serialize stats for {}: {}", addr, e);
+                time::sleep(Duration::from_secs(1)).await;
+                continue;
+            }
+        };
 
         // Send stats over WebSocket
         {

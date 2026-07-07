@@ -10,12 +10,33 @@ import zoomPlugin from "chartjs-plugin-zoom";
 
 Chart.register(zoomPlugin);
 
+const AXIS_STYLE = {
+    ticks: {
+        color: "#b8ad8c",
+        font: { family: "'Josefin Sans', sans-serif" },
+    },
+    grid: { color: "#2a2a2e" },
+};
+
 class LogChart {
     constructor() {
         this.logList;
         this.logNumber = 0;
         this.options = {
             plugins: {
+                legend: {
+                    labels: {
+                        color: "#f2e8c9",
+                        font: { family: "'Josefin Sans', sans-serif" },
+                    },
+                },
+                tooltip: {
+                    backgroundColor: "#14120c",
+                    borderColor: "#c9a227",
+                    borderWidth: 1,
+                    titleColor: "#e8c96a",
+                    bodyColor: "#f2e8c9",
+                },
                 zoom: {
                     zoom: {
                         wheel: {
@@ -240,7 +261,7 @@ function buttonsReadyChartOptions(logChart, logCNRData, logNETData) {
 }
 
 function createChartWindow(logChart, cpuLog, ramLog, netLog) {
-    let topContainer = document.getElementsByClassName("thatsAllFolks")[0];
+    let topContainer = document.body;
 
     let chartWindow = document.createElement("div");
     chartWindow.id = "chartWindow";
@@ -292,8 +313,7 @@ function createChartWindow(logChart, cpuLog, ramLog, netLog) {
 }
 
 function closeChartWindow() {
-    let topContainer = document.getElementsByClassName("thatsAllFolks")[0];
-    topContainer.removeChild(document.getElementById("chartWindow"));
+    document.getElementById("chartWindow").remove();
 
     display.write_line("Chart window closed.");
 }
@@ -315,10 +335,10 @@ function getChart0(logChart, canvasElement, cpuLog) {
             {
                 label: "CPU Load (%)",
                 data: logData,
-                borderColor: "rgba(75, 192, 192, 1)",
+                borderColor: "#1f9e6e",
                 fill: false,
                 lineTension: 0.1,
-                pointBackgroundColor: "rgba(75, 192, 192, 1)",
+                pointBackgroundColor: "#1f9e6e",
                 pointRadius: 1,
                 pointHoverRadius: 5,
             },
@@ -328,9 +348,11 @@ function getChart0(logChart, canvasElement, cpuLog) {
     const options = {
         ...logChart.options,
         scales: {
+            x: { ...AXIS_STYLE },
             y: {
                 min: 0,
                 max: 100,
+                ...AXIS_STYLE,
             },
         },
     };
@@ -359,10 +381,10 @@ function getChart1(logChart, canvasElement, ramLog) {
             {
                 label: "Memory Usage (MB)",
                 data: logData,
-                borderColor: "rgba(153, 102, 255, 1)",
+                borderColor: "#e0a020",
                 fill: false,
                 lineTension: 0.1,
-                pointBackgroundColor: "rgba(153, 102, 255, 1)",
+                pointBackgroundColor: "#e0a020",
                 pointRadius: 1,
                 pointHoverRadius: 5,
             },
@@ -372,9 +394,11 @@ function getChart1(logChart, canvasElement, ramLog) {
     const options = {
         ...logChart.options,
         scales: {
+            x: { ...AXIS_STYLE },
             y: {
                 min: 0,
                 max: ramMax,
+                ...AXIS_STYLE,
             },
         },
     };
@@ -409,20 +433,20 @@ function getChart2(logChart, canvasElement, netLog) {
             {
                 label: "Network Received (KB)",
                 data: downLogData,
-                borderColor: "rgba(255, 159, 64, 1)",
+                borderColor: "#5b8cbe",
                 fill: false,
                 lineTension: 0.1,
-                pointBackgroundColor: "rgba(255, 159, 64, 1)",
+                pointBackgroundColor: "#5b8cbe",
                 pointRadius: 1,
                 pointHoverRadius: 5,
             },
             {
                 label: "Network Transmitted (KB)",
                 data: upLogData,
-                borderColor: "rgba(64, 67, 255, 1)",
+                borderColor: "#e8c96a",
                 fill: false,
                 lineTension: 0.1,
-                pointBackgroundColor: "rgba(64, 67, 255, 1)",
+                pointBackgroundColor: "#e8c96a",
                 pointRadius: 1,
                 pointHoverRadius: 5,
             },
@@ -432,7 +456,13 @@ function getChart2(logChart, canvasElement, netLog) {
     new Chart(ctx, {
         type: "line",
         data: data,
-        options: logChart.options,
+        options: {
+            ...logChart.options,
+            scales: {
+                x: { ...AXIS_STYLE },
+                y: { ...AXIS_STYLE },
+            },
+        },
     });
 }
 

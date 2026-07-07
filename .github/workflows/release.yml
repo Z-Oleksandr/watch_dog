@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.semver.outputs.should_release }}
+      version: ${{ steps.semver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version from conventional commits
+        id: semver
+        run: ./scripts/compute_version.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG_BODY.md
+
+  build-engine:
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: engine-linux-x86_64
+            bin: engine
+          - os: windows-latest
+            asset: engine-windows-x86_64
+            bin: engine.exe
+          - os: macos-latest
+            asset: engine-macos-arm64
+            bin: engine
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            engine/target
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-release-${{ runner.os }}-
+
+      - name: Set version ${{ needs.version.outputs.version }}
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          perl -pi -e "s/^version = \".*\"/version = \"$V\"/" Cargo.toml
+          perl -0pi -e "s/(name = \"engine\"\nversion = \")[^\"]+/\${1}$V/" Cargo.lock
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: engine/target/release/${{ matrix.bin }}
+
+  build-frontend:
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front_panel/package-lock.json
+
+      - name: Build dist
+        working-directory: front_panel
+        run: |
+          npm ci
+          npm version "${{ needs.version.outputs.version }}" --no-git-tag-version
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: front_panel/dist
+
+  release:
+    needs: [version, build-engine, build-frontend]
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble release assets
+        run: |
+          V="${{ needs.version.outputs.version }}"
+
+          perl -pi -e "s/^version = \".*\"/version = \"$V\"/" engine/Cargo.toml
+          perl -0pi -e "s/(name = \"engine\"\nversion = \")[^\"]+/\${1}$V/" engine/Cargo.lock
+          (cd front_panel && npm version "$V" --no-git-tag-version)
+          npm version "$V" --no-git-tag-version
+
+          mkdir -p engine/app_linux engine/app_windows engine/app_macos front_panel/dist
+          install -m 755 artifacts/engine-linux-x86_64/engine engine/app_linux/engine
+          install -m 644 artifacts/engine-windows-x86_64/engine.exe engine/app_windows/engine.exe
+          install -m 755 artifacts/engine-macos-arm64/engine engine/app_macos/engine
+          cp -r artifacts/frontend-dist/. front_panel/dist/
+
+          mkdir -p out staging/watch_dog
+          rsync -a \
+            --exclude '.git' --exclude '.github' --exclude 'artifacts' \
+            --exclude 'node_modules' --exclude 'engine/target' \
+            --exclude 'logs' --exclude 'out' --exclude 'staging' \
+            ./ staging/watch_dog/
+          tar -czf "out/watch_dog-v${V}-full.tar.gz" -C staging watch_dog
+
+          tar -czf "out/engine-linux-x86_64-v${V}.tar.gz" -C engine/app_linux engine
+          tar -czf "out/engine-macos-arm64-v${V}.tar.gz" -C engine/app_macos engine
+          (cd engine/app_windows && zip -q "../../out/engine-windows-x86_64-v${V}.zip" engine.exe)
+
+          (cd out && sha256sum ./* > SHA256SUMS)
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          gh release create "v${V}" \
+            --target "$GITHUB_SHA" \
+            --title "v${V}" \
+            --notes-file artifacts/changelog/CHANGELOG_BODY.md \
+            out/*

@@ -14,8 +14,10 @@
         "launchWin": "npm-run-all --parallel start engine-windows",
         "engine_prebuilt_win": "start ../engine/app_windows/engine.exe",
         "engine_prebuild_linux": "chmod +x ../engine/app_linux/engine && ../engine/app_linux/engine",
+        "engine_prebuilt_mac": "chmod +x ../engine/app_macos/engine && ../engine/app_macos/engine",
         "watch_dog_win": "npm-run-all --parallel start engine_prebuilt_win",
         "watch_dog": "npm-run-all --parallel start engine_prebuild_linux",
+        "watch_dog_mac": "npm-run-all --parallel start engine_prebuilt_mac",
         "buildAndLaunch": "npm run build && npm run watch_dog_win",
         "buildAndLaunch_lin": "build && watch_dog"
     },

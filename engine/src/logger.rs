@@ -2,9 +2,10 @@ use std::{fs::OpenOptions, io::Write, time::{Duration, Instant}};
 use tokio::{fs::{self, File}, io::AsyncWriteExt, time};
 use serde_json::{json, Value};
 use chrono;
-use sysinfo::{System, Networks};
+use sysinfo::{Components, Networks, System};
 
 use crate::system_stats::{SystemStats, get_system_stats};
+use crate::temperatures::init_temp_sensors;
 use crate::helpers::ensure_dir;
 
 pub async fn log_stats(duration_in_hours: u64) {
@@ -44,12 +45,19 @@ pub async fn log_stats(duration_in_hours: u64) {
 
     let mut sys = System::new_all();
     let mut networks = Networks::new_with_refreshed_list();
+    let mut components = Components::new();
+    let empty_temp_registry = init_temp_sensors(&components);
 
     while start.elapsed() < duration {
         let minute_start = Instant::now();
         while minute_start.elapsed() < Duration::from_secs(60) {
             // Collect system stats
-            let stats: SystemStats = get_system_stats(&mut sys, &mut networks);
+            let stats: SystemStats = get_system_stats(
+                &mut sys,
+                &mut networks,
+                &mut components,
+                &empty_temp_registry
+            );
 
             // Add timestamp
             let timestamp = chrono::Utc::now()
