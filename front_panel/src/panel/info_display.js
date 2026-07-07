@@ -20,38 +20,57 @@ export function showGreeting() {
     return container;
 }
 
+let pending_info = null;
+let reveal_ready = false;
+
+export function revealSystemInfo() {
+    reveal_ready = true;
+    if (pending_info) {
+        const data = pending_info;
+        pending_info = null;
+        swapToInfo(data);
+    }
+}
+
 export function renderSystemInfo(data) {
     if (initialized) return;
     initialized = true;
 
+    if (reveal_ready) {
+        swapToInfo(data);
+    } else {
+        pending_info = data;
+    }
+}
+
+function swapToInfo(data) {
     const display = document.getElementsByClassName("display")[0];
-    const greeting = showGreeting();
 
-    setTimeout(() => {
-        greeting.remove();
+    if (greeting_el) {
+        greeting_el.remove();
         greeting_el = null;
+    }
 
-        const column1 = document.createElement("div");
-        const column2 = document.createElement("div");
-        column1.classList.add("column");
-        column2.classList.add("column");
-        column2.setAttribute("id", "column2");
+    const column1 = document.createElement("div");
+    const column2 = document.createElement("div");
+    column1.classList.add("column");
+    column2.classList.add("column");
+    column2.setAttribute("id", "column2");
 
-        Object.entries(data).forEach(([key, value], index) => {
-            if (key === "data_type") return;
-            const text = document.createElement("p");
-            const label = document.createElement("span");
-            label.classList.add("spec-key");
-            label.textContent = key.replaceAll("_", " ");
-            text.appendChild(label);
-            const shown = key === "uptime" ? formatSecondsToTime(value) : value;
-            text.appendChild(document.createTextNode(shown));
-            if (key === "uptime") text.dataset.uptime = "1";
-            (index < 5 ? column1 : column2).appendChild(text);
-        });
+    Object.entries(data).forEach(([key, value], index) => {
+        if (key === "data_type") return;
+        const text = document.createElement("p");
+        const label = document.createElement("span");
+        label.classList.add("spec-key");
+        label.textContent = key.replaceAll("_", " ");
+        text.appendChild(label);
+        const shown = key === "uptime" ? formatSecondsToTime(value) : value;
+        text.appendChild(document.createTextNode(shown));
+        if (key === "uptime") text.dataset.uptime = "1";
+        (index < 5 ? column1 : column2).appendChild(text);
+    });
 
-        display.append(column1, column2);
-    }, 5000);
+    display.append(column1, column2);
 }
 
 export function updateUptime(value) {
