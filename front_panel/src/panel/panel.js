@@ -229,8 +229,6 @@ export function initPanel(data) {
                   },
         members: disk_members,
     });
-
-    sweepAll();
 }
 
 export function isPanelInitialized() {

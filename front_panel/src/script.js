@@ -1,6 +1,6 @@
 import { indicators } from "./control2/indicator";
 import "./control2/main_control2";
-import "./boot/boot_sequence";
+import { startInitSequence } from "./boot/boot_sequence";
 import { setResetState } from "./button_functions/button_functions";
 import { getDisplay2 } from "./dsiplay2/display2";
 import {
@@ -51,6 +51,7 @@ export function resetWS(newWS) {
     setTimeout(() => {
         setResetState(false);
         if (ws.readyState === WebSocket.OPEN) {
+            startInitSequence();
             display2.write_line("WebSocket connection reset complete.");
             display2.write_line("WS connection at: " + connectionAt);
         } else {
@@ -83,6 +84,7 @@ setTimeout(() => {
 
 ws.onopen = function () {
     console.log("WebSocket connection esablished");
+    startInitSequence();
     server_communication(ws);
     setTimeout(() => {
         isWSConnected(ws);
