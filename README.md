@@ -9,20 +9,21 @@ The main idea is to be able to see the state of the server's system using any de
 
 -   You need to have node and npm installed in order to run the front-end of the app.
 
-### Steps (from a release — recommended):
+### Steps (from a release, recommended):
 
-1. Download `watch_dog-vX.Y.Z-full.tar.gz` from the [GitHub Releases](https://github.com/Z-Oleksandr/watch_dog/releases) page and unpack it. It ships with the front-end already built and prebuilt engine binaries for Linux (x86_64), Windows (x86_64) and macOS (arm64).
-2. Move to front_panel dir `cd front_panel/`
-3. Execute `npm ci --omit=dev`
-4.  - On Windows: execute `npm run watch_dog_win`
+1. Download `watch_dog-vX.Y.Z-full.tar.gz` from the [GitHub Releases](https://github.com/Z-Oleksandr/watch_dog/releases) page.
+2. Unpack it: `tar -xzf watch_dog-vX.Y.Z-full.tar.gz`. All binaries in the release are packed inside the archives: the full bundle ships with the front-end already built and prebuilt engine binaries for Linux (x86_64), Windows (x86_64) and macOS (arm64) in `engine/app_linux|app_windows|app_macos`. The standalone `engine-*` archives contain just the engine executable for that platform, for updating an existing installation.
+3. Move to front_panel dir `cd front_panel/`
+4. Execute `npm ci --omit=dev`
+5.  - On Windows: execute `npm run watch_dog_win`
     - On Linux: execute `npm run watch_dog`
     - On macOS: execute `npm run watch_dog_mac`
-5. In browser open `http://localhost:9000`
+6. In browser open `http://localhost:9000`
 
 ### Steps (from source):
 
 1. Clone the project.
-2. Either download the engine binary for your platform from [Releases](https://github.com/Z-Oleksandr/watch_dog/releases) into `engine/app_linux/` (or `app_windows/` / `app_macos/`), or build it yourself with `cd engine && cargo build --release` and use `npm run launch` later instead of `npm run watch_dog`.
+2. Either download the engine archive for your platform from [Releases](https://github.com/Z-Oleksandr/watch_dog/releases) and unpack it into `engine/app_linux/` (or `app_windows/` / `app_macos/`), for example `tar -xzf engine-linux-x86_64-vX.Y.Z.tar.gz -C engine/app_linux/`, or build it yourself with `cd engine && cargo build --release` and use `npm run launch` later instead of `npm run watch_dog`.
 3. Move to front_panel dir `cd front_panel/`
 4. Execute `npm install`
 5. Execute `npm run build`
