@@ -210,38 +210,16 @@ body {
 }
 
 .deco-crest {
-    position: relative;
-    height: 5vh;
-    width: min(42vw, 520px);
-    margin: 0 auto;
+    height: 3.4vh;
     background:
-        radial-gradient(circle at 50% 100%, var(--brass-light) 0 4px, transparent 5px),
-        linear-gradient(
-            90deg,
-            transparent 0%,
-            var(--brass-dark) 16%,
-            var(--brass-dark) 42%,
-            transparent 46%,
-            transparent 54%,
-            var(--brass-dark) 58%,
-            var(--brass-dark) 84%,
-            transparent 100%
-        ) 50% 100% / 100% 1px no-repeat;
-}
-
-.deco-crest::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
+        radial-gradient(circle at 50% 100%, var(--brass) 0 4px, transparent 5px),
         repeating-conic-gradient(
-            from -1.5deg at 50% 100%,
-            rgba(201, 162, 39, 0.55) 0deg 3deg,
-            transparent 3deg 12deg
-        ),
-        radial-gradient(circle 4.6vh at 50% 100%, rgba(232, 201, 106, 0.14), transparent 75%);
-    mask-image: radial-gradient(circle 4.6vh at 50% 100%, black 55%, transparent 97%);
-    -webkit-mask-image: radial-gradient(circle 4.6vh at 50% 100%, black 55%, transparent 97%);
+            from -1deg at 50% 100%,
+            rgba(201, 162, 39, 0.5) 0deg 2deg,
+            transparent 2deg 12deg
+        );
+    mask-image: radial-gradient(ellipse at 50% 100%, black 30%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 100%, black 30%, transparent 72%);
 }
 
 .plaque::before {
@@ -399,7 +377,7 @@ body {
 /* ---------- displays ---------- */
 
 .display {
-    height: 19.5vh;
+    height: 20vh;
     display: flex;
     flex-wrap: wrap;
     padding: 1.6vh 1.2vw 0.8vh;
@@ -459,7 +437,7 @@ body {
 }
 
 .display_2 {
-    height: 19.5vh;
+    height: 20vh;
     padding: 1.2vh 1vw;
     overflow: hidden;
 }
