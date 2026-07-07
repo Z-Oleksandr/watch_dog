@@ -100,7 +100,9 @@ function buildUnavailableSection(container, title, message) {
     header.append(chevron_l, heading, chevron_r);
     const note = document.createElement("p");
     note.className = "cluster-unavailable";
-    note.textContent = message;
+    const note_text = document.createElement("span");
+    note_text.textContent = message;
+    note.appendChild(note_text);
     root.append(header, note);
     container.appendChild(root);
     return root;

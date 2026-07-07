@@ -211,7 +211,7 @@ body {
 .cluster-chevrons {
     flex: 1;
     height: 8px;
-    max-width: 30%;
+    min-width: 0;
     background: repeating-linear-gradient(
         -45deg,
         transparent 0 4px,
@@ -236,23 +236,30 @@ body {
 }
 
 .cluster-unavailable {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9em;
     font-size: 0.68rem;
     font-weight: 600;
-    letter-spacing: 0.4em;
     text-transform: uppercase;
     color: var(--cream-dim);
     border: 1px solid var(--brass-dark);
-    padding: 1.2em 0.6em 1em 1em;
+    padding: 1em 0.8em;
     margin: 0.6em 1em;
+}
+
+.cluster-unavailable span {
+    text-align: center;
+    letter-spacing: 0.4em;
+    margin-right: -0.4em;
+    line-height: 1.9;
 }
 
 .cluster-unavailable::before,
 .cluster-unavailable::after {
     content: "◆";
     color: var(--brass-dark);
-    margin: 0 0.9em;
-    letter-spacing: 0;
 }
 
 .cluster-members {
