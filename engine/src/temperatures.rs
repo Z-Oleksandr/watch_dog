@@ -4,6 +4,14 @@ use sysinfo::Components;
 const MIN_PLAUSIBLE_C: f32 = 0.0;
 const MAX_PLAUSIBLE_C: f32 = 130.0;
 
+// Calibration/reference sensors report constants, not component temperatures
+const MEANINGLESS_LABEL_PARTS: [&str; 2] = ["tcal", "calibration"];
+
+fn is_meaningless_label(label: &str) -> bool {
+    let lower = label.to_lowercase();
+    MEANINGLESS_LABEL_PARTS.iter().any(|part| lower.contains(part))
+}
+
 #[derive(Serialize, Clone)]
 pub struct TempSensor {
     pub label: String,
@@ -25,6 +33,7 @@ pub fn init_temp_sensors(components: &Components) -> TempSensorRegistry {
         if !temperature.is_finite()
             || temperature <= MIN_PLAUSIBLE_C
             || temperature >= MAX_PLAUSIBLE_C
+            || is_meaningless_label(component.label())
         {
             continue;
         }
