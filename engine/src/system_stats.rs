@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use sysinfo::{
     Components, Disks, Networks,
     System
@@ -43,15 +45,17 @@ pub fn get_system_stats(
     // Disk data
     let disks = Disks::new_with_refreshed_list();
     let mut disks_used_space = Vec::new();
+    let mut seen_this_tick = HashSet::new();
 
     {
-        let mut disk_register = DISK_REGISTER.lock().unwrap();
+        let disk_register = DISK_REGISTER.lock().unwrap();
 
         for disk in disks.list() {
             if is_initialized_disk(
-                disk.name(), 
-                &disk_register, 
-                disk.mount_point()
+                disk.name(),
+                &disk_register,
+                disk.mount_point(),
+                &mut seen_this_tick
             ) {
                 disks_used_space.push(
                     (disk.total_space() - disk.available_space()) / 1_000_000

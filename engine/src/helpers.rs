@@ -6,46 +6,61 @@ use std::{
     io
 };
 
-// For linux we need to filter non-physical drives
-pub fn is_not_pidor(disk_name: &OsStr, disk_register: &mut HashSet<String>) -> bool {
-    let pidors: [String; 3] = [
-        String::from("tmpfs"),
-        String::from("overlay"),
-        String::from("devtmpfs")
-    ];
+// System partitions and snap images are not storage worth monitoring
+const EXCLUDED_MOUNT_PREFIXES: [&str; 3] = ["/boot", "/var/snap", "/var/lib/snapd"];
 
-    let clean_disk_name = disk_name
-        .to_str()
-        .unwrap()
-        .trim_matches('\"')
-        .to_string();
-    let not_pidor = !pidors.contains(&clean_disk_name);
-    if not_pidor && disk_register.insert(clean_disk_name) {
-        return true
+fn is_excluded_mount(mount_point: &Path) -> bool {
+    match mount_point.to_str() {
+        Some(path) => EXCLUDED_MOUNT_PREFIXES
+            .iter()
+            .any(|prefix| path.starts_with(prefix)),
+        None => true,
     }
-    false
+}
+
+fn clean_disk_name(disk_name: &OsStr) -> Option<String> {
+    disk_name
+        .to_str()
+        .map(|name| name.trim_matches('\"').to_string())
+}
+
+// For linux we need to filter non-physical drives
+pub fn is_not_pidor(
+    disk_name: &OsStr,
+    disk_register: &mut HashSet<String>,
+    disk_mount_point: &Path
+) -> bool {
+    let pidors = ["tmpfs", "overlay", "devtmpfs"];
+
+    let name = match clean_disk_name(disk_name) {
+        Some(name) => name,
+        None => return false,
+    };
+    if pidors.contains(&name.as_str()) || is_excluded_mount(disk_mount_point) {
+        return false;
+    }
+    disk_register.insert(name)
 }
 
 pub fn is_initialized_disk(
-        disk_name: &OsStr, 
+        disk_name: &OsStr,
         disk_register: &HashSet<String>,
-        disk_mount_point: &Path
+        disk_mount_point: &Path,
+        seen_this_tick: &mut HashSet<String>
     ) -> bool {
-    // Exclude Snap-related mounts
-    let mount_path = disk_mount_point.to_str().unwrap();
-    if mount_path.starts_with("/var/snap") {
+    if is_excluded_mount(disk_mount_point) {
         return false;
     }
 
-    let clean_disk_name = disk_name
-        .to_str()
-        .unwrap()
-        .trim_matches('\"')
-        .to_string();
-    if disk_register.contains(&clean_disk_name) {
-        return true
+    let name = match clean_disk_name(disk_name) {
+        Some(name) => name,
+        None => return false,
+    };
+    if !disk_register.contains(&name) {
+        return false;
     }
-    false
+    // A device mounted several times (btrfs subvolumes) reports once
+    seen_this_tick.insert(name)
 }
 
 pub fn ensure_dir(dir: &str) -> io::Result<()> {

@@ -57,7 +57,7 @@ pub fn get_system_data(temp_sensors: Vec<TempSensor>) -> SystemData {
 
         for disk in disks.list() {
             // For linux we need to filter non-physical drives
-            if is_not_pidor(disk.name(), &mut disk_register) {
+            if is_not_pidor(disk.name(), &mut disk_register, disk.mount_point()) {
                 disks_space.push(disk.total_space() / 1_000_000_000);
                 disk_count += 1;
             }
