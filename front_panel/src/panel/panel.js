@@ -2,6 +2,7 @@ import { DecoGauge } from "../deco_gauge/deco_gauge";
 import { GaugeCluster } from "../deco_gauge/gauge_cluster";
 import { DECO, percentZones } from "../deco_gauge/theme";
 import { updateUptime } from "./info_display";
+import { friendlySensorName } from "./sensor_names";
 
 const NET_BASE_MAX = 500;
 const NET_WIDE_MAX = 1000;
@@ -121,7 +122,16 @@ function groupSensors(sensors) {
             group.critical = sensor.critical;
         }
     });
-    return [...groups.values()];
+
+    const result = [...groups.values()];
+    const seen = new Map();
+    result.forEach((group) => {
+        const base = friendlySensorName(group.name);
+        const count = (seen.get(base) || 0) + 1;
+        seen.set(base, count);
+        group.display = count === 1 ? base : `${base} ${count}`;
+    });
+    return result;
 }
 
 function netZones(max) {
@@ -185,8 +195,9 @@ export function initPanel(data) {
             },
             members: temp_groups.map((group) => {
                 const critical = group.critical || TEMP_FALLBACK_CRITICAL;
+                const label = group.display;
                 return {
-                    label: group.name.length > 14 ? group.name.slice(0, 13) + "…" : group.name,
+                    label: label.length > 14 ? label.slice(0, 13) + "…" : label,
                     unit: "°",
                     max: critical,
                     zones: tempZones(critical),
