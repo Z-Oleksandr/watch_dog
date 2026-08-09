@@ -1,338 +1,148 @@
-use std::{
-    net::SocketAddr, time::Duration, 
-    fs::metadata, sync::Arc,
-    collections::HashMap,
-};
-use sysinfo::{Components, Networks, System};
-use tokio::{
-    net::{TcpListener, TcpStream}, time,
-    sync::Mutex, fs::read_to_string,
-};
-use tokio_tungstenite::{
-    accept_async, tungstenite::protocol::Message, 
-    WebSocketStream
-};
-use serde::{Serialize, Deserialize};
-use futures::{StreamExt, SinkExt, stream::{SplitStream, SplitSink}};
-use walkdir::WalkDir;
+use std::process::ExitCode;
+use std::sync::Arc;
 
-mod helpers;
-use helpers::ensure_dir;
+use log::{error, info, warn};
+use tokio::net::TcpListener;
+use tokio::sync::Semaphore;
+use tokio::time::timeout;
+use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 
-mod system_info;
-use system_info::{get_system_data, get_system_info};
-
-mod system_stats;
-use system_stats::get_system_stats;
-
-mod logger;
-use logger::log_stats;
-
-mod send_log_data;
-use send_log_data::send_log_data;
-
-mod temperatures;
-use temperatures::init_temp_sensors;
-
+mod config;
 mod docker_mon;
+mod helpers;
+mod logfiles;
+mod logging;
+mod sampler;
+mod system_info;
+mod system_stats;
+mod temperatures;
+mod topology;
+mod ws;
 
-use docker_mon::{
-    prepare_start_container, send_containers::send_containers_list, stream_container::{get_index_and_channel, stream_container, STREAM_REGISTRY}
-};
+use docker_mon::DockerMonitor;
+use logfiles::recorder::Recorder;
+use system_info::SystemInfoTemplate;
+use ws::AppContext;
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct IncomingMessage {
-    r#type: String,
-    message: u64,
+#[tokio::main]
+async fn main() -> ExitCode {
+    if let Err(e) = logging::init() {
+        eprintln!("Failed to install the logger: {}", e);
+        return ExitCode::FAILURE;
+    }
+
+    // The machine is enumerated once. Everything downstream indexes readings
+    // against this snapshot, so it must not be rebuilt while the engine runs.
+    let (topology, handles) = match topology::probe() {
+        Ok(probed) => probed,
+        Err(e) => {
+            error!("Could not read the system topology: {}", e);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let docker = Arc::new(DockerMonitor::init().await);
+    let info_template = Arc::new(SystemInfoTemplate::probe(docker.version()));
+
+    let topology = Arc::new(topology);
+    let shutdown = CancellationToken::new();
+    let tracker = TaskTracker::new();
+
+    let stats = sampler::spawn(Arc::clone(&topology), handles, &tracker, shutdown.clone());
+
+    let addr = config::bind_addr();
+    let listener = match TcpListener::bind(&addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            error!("Failed to bind {}: {}", addr, e);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    info!("WebSocket server listening on {}", addr);
+
+    let ctx = Arc::new(AppContext {
+        topology,
+        info_template,
+        docker,
+        stats: stats.clone(),
+        log_index: logfiles::new_log_index(),
+        recorder: Arc::new(Recorder::new()),
+        tracker: tracker.clone(),
+        shutdown: shutdown.clone(),
+        connection_slots: Arc::new(Semaphore::new(config::MAX_CONNECTIONS)),
+    });
+
+    accept_loop(listener, ctx, shutdown.clone()).await;
+
+    info!("Shutting down");
+    shutdown.cancel();
+    tracker.close();
+
+    match timeout(config::SHUTDOWN_GRACE, tracker.wait()).await {
+        Ok(()) => info!("All connections closed cleanly"),
+        Err(_) => warn!(
+            "Gave up waiting for tasks after {:?}",
+            config::SHUTDOWN_GRACE
+        ),
+    }
+
+    ExitCode::SUCCESS
 }
 
-#[derive(Serialize)]
-struct LogListStruct {
-    data_type: u32,
-    log_list: HashMap<u32, String>,
-}
+async fn accept_loop(listener: TcpListener, ctx: Arc<AppContext>, shutdown: CancellationToken) {
+    loop {
+        let accepted = tokio::select! {
+            _ = shutdown.cancelled() => return,
+            _ = wait_for_signal() => {
+                info!("Received a shutdown signal");
+                return;
+            }
+            accepted = listener.accept() => accepted,
+        };
 
-async fn handle_read(
-    mut read:SplitStream<WebSocketStream<TcpStream>>,
-    write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
-    log_list: Arc<Mutex<HashMap<u32, String>>>,
-    connection_channels: Arc<Mutex<Vec<u32>>>
-) {
-    // Read message
-    while let Some(Ok(msg)) = read.next().await {
-        if let Ok(text) = msg.to_text() {
-            if let Ok(incoming_msg) = serde_json::from_str::<IncomingMessage>(text) {
-                println!("Received Message!");
-                println!(
-                    "Type: {}, \nMessage: {}", 
-                    incoming_msg.r#type, 
-                    incoming_msg.message
-                );
-                match incoming_msg.r#type.as_str() {
-                    "start_log" => start_log(incoming_msg.message),
-                    "get_log_list" => {
-                        let write_clone = Arc::clone(&write);
-                        let log_list_clone = Arc::clone(&log_list);
-                        tokio::spawn(
-                            async move {
-                                send_log_list(
-                                    write_clone,
-                                    log_list_clone
-                                ).await;
-                            }
-                        );
-                    },
-                    "get_log_data" => {
-                        let write_clone = Arc::clone(&write); 
-                        let log_list_clone = Arc::clone(&log_list);
-                        tokio::spawn(
-                            async move {
-                                send_log_data(
-                                    incoming_msg.message as u32, 
-                                    write_clone, 
-                                    log_list_clone
-                                ).await
-                            }
-                        );
-                    },
-                    "get_containers" => {
-                        let write_clone = Arc::clone(&write);
-                        tokio::spawn(
-                            async move {
-                                send_containers_list(
-                                    write_clone,
-                                ).await
-                            }
-                        );
-                    },
-                    "start_container_output" => {
-                        let write_clone = Arc::clone(&write);
-                        match prepare_start_container(incoming_msg.clone()).await {
-                            Some(data) => {
-                                let mut channels = connection_channels.lock().await;
-                                channels.push(data.channel);
-                                tokio::spawn(
-                                    async move {
-                                        stream_container(
-                                            write_clone, 
-                                            data.container_index,
-                                            data.channel,
-                                            data.token
-                                        ).await;
-
-                                        STREAM_REGISTRY
-                                            .lock()
-                                            .await
-                                            .remove(
-                                                &data.channel
-                                            )
-                                    }
-                                );
-                            },
-                            None => continue,
-                        };
-                    },
-                    "stop_container_output" => {
-                        let key = incoming_msg.message as u32;
-                        let mut registry = STREAM_REGISTRY.lock().await;
-                        if let Some(token) = registry.remove(&key) {
-                            token.cancel();
-                            println!("Cancelled stream for {:?}", key);
-                        } else {
-                            println!("No stream active for {:?}", key);
-                        }
-                    }
-                    _ => println!("Unknown message type"),
-                };
+        match accepted {
+            Ok((stream, addr)) => {
+                let ctx = Arc::clone(&ctx);
+                ctx.tracker
+                    .clone()
+                    .spawn(async move { ws::connection::handle(stream, addr, ctx).await });
+            }
+            Err(e) => {
+                warn!("Failed to accept a connection: {}", e);
             }
         }
     }
-    let channels = connection_channels.lock().await;
-    let mut registry = STREAM_REGISTRY.lock().await;
-    for &channel in channels.iter() {
-        if let Some(token) = registry.remove(&channel) {
-            token.cancel();
-            println!("Cleaned up stream for closed connection.");
-        }
-    }
 }
 
-fn start_log(time: u64) {
-    tokio::spawn(log_stats(time));
-}
-
-async fn send_log_list(
-    write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>,
-    log_list: Arc<Mutex<HashMap<u32, String>>>
-) {
-    let log_dir = "../logs/";
-    match ensure_dir(&log_dir) {
-        Ok(_) => {},
-        Err(e) => println!("Something wrong with the log dir: {}", e),
-    };
-
-    let mut new_log_list: HashMap<u32, String> = HashMap::new();
-    let mut index = 0;
-
-    for entry in WalkDir::new(log_dir) {
-        match entry {
-            Ok(entry) => {
-                if metadata(entry.path()).expect("Metadata error").is_file() {
-                    let file_name = entry.file_name().to_string_lossy().into_owned();
-                    if file_name.starts_with("cnr_") && file_name.ends_with(".json") {
-                        let trimmed_name = file_name
-                            .strip_prefix("cnr_")
-                            .and_then(|name| name.strip_suffix(".json"))
-                            .unwrap();
-                        new_log_list.insert(
-                            index,
-                            trimmed_name.to_string()
-                        );
-                        index += 1;
-                    }
-                }
-            },
-            Err(e) => eprintln!("Error getting log list: {}", e),
-        }
-    }
-
+/// Resolves on SIGINT, and on SIGTERM where the platform has it, so a process
+/// manager can restart the engine without severing sockets abruptly.
+async fn wait_for_signal() {
+    #[cfg(unix)]
     {
-        let mut log_list = log_list.lock().await;
-        *log_list = new_log_list.clone();
-    }
+        use tokio::signal::unix::{signal, SignalKind};
 
-    let log_list_struct = LogListStruct {
-        data_type: 3,
-        log_list: new_log_list
-    };
-
-    let log_list_json = serde_json::to_string(&log_list_struct)
-        .expect("Failed to serialize log list");
-
-    let mut write = write.lock().await;
-    if let Err(e) = write.send(Message::Text(log_list_json)).await {
-        eprintln!("Failed to send log list: {}", e);
-    }
-}
-
-async fn handle_connection(
-    raw_stream: TcpStream, 
-    addr: SocketAddr,
-    log_list: Arc<Mutex<HashMap<u32, String>>>
-) {
-    println!("New Socket connection: {}", addr);
-
-    let ws_stream = accept_async(raw_stream)
-        .await
-        .expect("Failed to accept");
-
-    // Split ws stream into sender and receiver
-    let (write, read) = ws_stream.split();
-
-    let write = Arc::new(Mutex::new(write));
-
-    let write_clone = Arc::clone(&write);
-
-    let connection_channels = Arc::new(Mutex::new(Vec::<u32>::new()));
-    let connection_channels_clone = Arc::clone(&connection_channels);
-
-    tokio::spawn(async move {
-        handle_read(read, write_clone, log_list, connection_channels_clone).await;
-    });
-
-    let mut components = Components::new_with_refreshed_list();
-    let temp_registry = init_temp_sensors(&components);
-    if temp_registry.sensors.is_empty() {
-        println!("No temperature sensors available on this platform; reporting none to {}", addr);
-    }
-
-    // Send static system data
-    let system_data_json = match serde_json::to_string(
-        &get_system_data(temp_registry.sensors.clone())
-    ) {
-        Ok(json) => json,
-        Err(e) => {
-            eprintln!("Failed to serialize system data for {}: {}", addr, e);
-            return;
-        }
-    };
-
-    {
-        let mut write = write.lock().await;
-        if let Err(e) = write.send(Message::Text(system_data_json)).await {
-            eprintln!("Error sending static data to {}: {}", addr, e);
-            return;
-        }
-    }
-
-    // Send general system info
-    let system_info_json = match serde_json::to_string(
-        &get_system_info().await
-    ) {
-        Ok(json) => json,
-        Err(e) => {
-            eprintln!("Failed to serialize system info for {}: {}", addr, e);
-            return;
-        }
-    };
-
-    {
-        let mut write = write.lock().await;
-        if let Err(e) = write.send(Message::Text(system_info_json)).await {
-            eprintln!("Error sending system info to {}: {}", addr, e);
-            return;
-        }
-    }
-
-    time::sleep(Duration::from_secs(5)).await;
-
-    let mut sys = System::new_all();
-    let mut networks = Networks::new_with_refreshed_list();
-
-    // Live System Stats stream
-    loop {
-        // Serialize stats to JSON
-        let stats_json = match serde_json::to_string(
-            &get_system_stats(&mut sys, &mut networks, &mut components, &temp_registry)
-        ) {
-            Ok(json) => json,
+        let mut terminate = match signal(SignalKind::terminate()) {
+            Ok(terminate) => terminate,
             Err(e) => {
-                eprintln!("Failed to serialize stats for {}: {}", addr, e);
-                time::sleep(Duration::from_secs(1)).await;
-                continue;
+                warn!(
+                    "Cannot listen for SIGTERM, only SIGINT will stop the engine: {}",
+                    e
+                );
+                let _ = tokio::signal::ctrl_c().await;
+                return;
             }
         };
 
-        // Send stats over WebSocket
-        {
-            let mut write = write.lock().await;
-            if let Err(e) = write.send(Message::Text(stats_json)).await {
-                eprintln!("Error sending stats: {}", e);
-                break;
-            }
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {}
+            _ = terminate.recv() => {}
         }
-
-        time::sleep(Duration::from_secs(1)).await;
     }
-}
 
-#[tokio::main]
-async fn main() { 
-    // let addr = "127.0.0.1:8999";
-    let addr = "0.0.0.0:8999";
-    let listener = TcpListener::bind(&addr).await.expect("Failed to build");
-    println!("WebSocket server listening on {}", addr);
-
-    let log_list: Arc<Mutex<HashMap<u32, String>>> = Arc::new(
-        Mutex::new(HashMap::new())
-    );
-
-    while let Ok((stream, addr)) = listener.accept().await {
-        let log_list_clone = Arc::clone(&log_list);
-        tokio::spawn(handle_connection(
-            stream, 
-            addr,
-            log_list_clone
-        ));
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
     }
 }

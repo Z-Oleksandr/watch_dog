@@ -1,47 +1,32 @@
-use serde_json::json;
-use std::{collections::BTreeMap, sync::Arc};
-use tokio::{sync::Mutex, net::TcpStream};
-use futures::{SinkExt, stream::SplitSink};
-use tokio_tungstenite::{
-    tungstenite::protocol::Message, 
-    WebSocketStream
-};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
-use super::CONTAINER_REGISTER;
+use log::error;
+use serde::Serialize;
 
-pub async fn send_containers_list(
-    write: Arc<Mutex<SplitSink<WebSocketStream<TcpStream>, Message>>>
-) {
-    let container_reg = CONTAINER_REGISTER.lock().await;
+use super::DockerMonitor;
+use crate::ws::sink::ConnectionSink;
 
-    let mut container_map: BTreeMap<u32, String> = BTreeMap::new();
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+struct ContainerListPayload {
+    data_type: u32,
+    list: BTreeMap<u32, String>,
+}
 
-    for (index, container) in container_reg.iter() {
-        let name = container
-            .names
-            .get(0)
-            .map(|s| s.trim_start_matches("/").to_string())
-            .unwrap_or_else(|| "unkown".to_string());
+pub async fn send_containers_list(sink: Arc<ConnectionSink>, docker: Arc<DockerMonitor>) {
+    let payload = ContainerListPayload {
+        data_type: 5,
+        list: docker.names().await,
+    };
 
-        container_map.insert(*index, name);
-    }
-
-    let payload = json!(
-        {
-            "data_type": 5,
-            "list": container_map
-        }
-    );
-
-    match serde_json::to_string(&payload) {
-        Ok(json_string) => {
-            let mut write = write.lock().await;
-            if let Err(e) = write.send(Message::Text(json_string)).await {
-                eprintln!("Container list send failed: {}", e);
-            }
-        },
+    let json = match serde_json::to_string(&payload) {
+        Ok(json) => json,
         Err(e) => {
-            eprintln!("Container list serialize failed: {}", e);
+            error!("Failed to serialize the container list: {}", e);
+            return;
         }
-    }
+    };
+
+    sink.send_text(json).await;
 }

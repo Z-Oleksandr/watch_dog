@@ -46,6 +46,19 @@ And that is basically it, **however** that is more of a test run. In order to fu
 
 Note: On a linux system you might need to make sure the binary has executable permissions. For example from project root execute: `chmod +x /engine/app_linux/engine`
 
+### Engine configuration (optional)
+
+The engine reads two environment variables, both optional:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `WATCH_DOG_ADDR` | `0.0.0.0:8999` | Address the engine binds to. Set it to `127.0.0.1:8999` to accept connections only from the machine itself. |
+| `WATCH_DOG_LOG` | `info` | Log verbosity: `off`, `error`, `warn`, `info`, `debug` or `trace`. `RUST_LOG` is honoured too. |
+
+The engine stops cleanly on `SIGINT` and `SIGTERM`, closing open browser connections with a proper close frame first, so `pm2 restart watch_dog` and `pm2 stop watch_dog` are safe.
+
+Note: the set of disks and temperature sensors is detected once when the engine starts. If you attach a new drive, restart the engine to have it appear on the panel.
+
 ## Instruction manual:
 
 ### Start logging process

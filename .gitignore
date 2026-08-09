@@ -1,5 +1,5 @@
 # Logs
-logs
+/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -128,7 +128,7 @@ dist
 
 front_panel/dist/
 
-logs/*.json
+/logs/*.json
 
 # Docs
 */code_rules.md
