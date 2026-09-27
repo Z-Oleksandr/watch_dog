@@ -29,12 +29,20 @@
     --amber: #e0a020;
     --ruby: #c03546;
     --glow: #ffb84d;
+    --steel: #5b8cbe;
+    --lacquer-warm: #14120c;
+    --face-center: #1c1b20;
+    --face-edge: #08080a;
+    --bezel-inner: #0a0a0c;
+    --grid: #2a2a2e;
     --font-display: "Limelight", "Josefin Sans", sans-serif;
     --font-body: "Josefin Sans", sans-serif;
+    --z-cover: 2;
+    --z-plaque: 3;
+    --z-chart: 20;
+    --z-portal: 10;
     --panel-border:
-        0 0 0 1px var(--brass-dark),
-        0 0 0 3px var(--lacquer),
-        0 0 0 4px var(--brass),
+        0 0 0 1px var(--brass-dark), 0 0 0 3px var(--lacquer), 0 0 0 4px var(--brass),
         0 6px 24px rgba(0, 0, 0, 0.55);
 }
 
@@ -42,12 +50,26 @@
     box-sizing: border-box;
 }
 
+:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 body {
     font-family: var(--font-body);
     color: var(--cream);
     background:
-        radial-gradient(ellipse at 50% -20%, #22212a 0%, var(--lacquer) 60%),
-        var(--lacquer);
+        radial-gradient(ellipse at 50% -20%, #22212a 0%, var(--lacquer) 60%), var(--lacquer);
     margin: 0;
     padding: 0;
     min-height: 100vh;
@@ -67,8 +89,7 @@ body {
 
 .deco-panel {
     background:
-        linear-gradient(180deg, rgba(232, 201, 106, 0.04), transparent 18%),
-        var(--charcoal);
+        linear-gradient(180deg, rgba(232, 201, 106, 0.04), transparent 18%), var(--charcoal);
     box-shadow: var(--panel-border);
     border-radius: 3px;
     position: relative;
@@ -127,7 +148,7 @@ body {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 3;
+    z-index: var(--z-plaque);
     font-family: var(--font-body);
     font-size: 0.62rem;
     font-weight: 600;

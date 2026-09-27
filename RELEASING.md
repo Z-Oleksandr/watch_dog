@@ -42,5 +42,6 @@ truth. Engine binaries are not committed to the repository.
 ## CI
 
 `.github/workflows/ci.yml` runs on every PR and push to `main`: engine
-`cargo build` + `cargo test` (blocking) with `fmt`/`clippy` advisories, and the
-webpack production build of the front panel.
+`cargo build` + `cargo test` (blocking) with `fmt`/`clippy` advisories, and for
+the front panel ESLint, Prettier, Vitest, the webpack production build and
+`npm audit` on runtime dependencies (all blocking).
