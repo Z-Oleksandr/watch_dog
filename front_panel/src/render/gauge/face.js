@@ -6,6 +6,20 @@ const START_ANGLE = 0.75 * Math.PI;
 const ANGLE_RANGE = 1.5 * Math.PI;
 
 /**
+ * Tracking between the letters of a dial label: two hair spaces (U+200A).
+ * Written as escapes because ordinary spaces here double the label's width.
+ */
+const LABEL_LETTER_GAP = "\u200A\u200A";
+
+/**
+ * The engraved form of a dial label: upper case, letters lightly tracked.
+ * @param {string} label
+ */
+export function labelText(label) {
+    return label.toUpperCase().split("").join(LABEL_LETTER_GAP);
+}
+
+/**
  * Canvas angle of `value` on a dial with the given range.
  * @param {{ min: number, max: number }} opts
  * @param {number} value
@@ -93,7 +107,7 @@ export function drawFace(layer, opts) {
         const labelY = cy + s * 0.345;
         ctx.fillStyle = theme.brass;
         ctx.font = `600 ${Math.max(9, s * 0.062)}px ${theme.fontBody}`;
-        const text = opts.label.toUpperCase().split("").join("  ");
+        const text = labelText(opts.label);
         ctx.fillText(text, cx, labelY);
         const tw = ctx.measureText(text).width / 2 + s * 0.03;
         ctx.strokeStyle = theme.brassDark;
