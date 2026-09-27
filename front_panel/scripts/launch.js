@@ -60,7 +60,9 @@ function engineBinary(mode) {
     }
     const dir = PREBUILT_DIRS[process.platform];
     if (!dir) {
-        fail(`no prebuilt engine for platform ${process.platform}; build from source and use --engine source`);
+        fail(
+            `no prebuilt engine for platform ${process.platform}; build from source and use --engine source`
+        );
     }
     return path.join(ENGINE_DIR, dir, name);
 }

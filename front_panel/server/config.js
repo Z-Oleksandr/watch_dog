@@ -75,7 +75,10 @@ function parseEngineAddr(raw) {
  * @param {NodeJS.ProcessEnv} [env]
  */
 function loadConfig(env = process.env) {
-    const port = parsePort(readString(env, "FRONT_PANEL_PORT", String(DEFAULTS.port)), "FRONT_PANEL_PORT");
+    const port = parsePort(
+        readString(env, "FRONT_PANEL_PORT", String(DEFAULTS.port)),
+        "FRONT_PANEL_PORT"
+    );
     const bind = readString(env, "FRONT_PANEL_BIND", DEFAULTS.bind);
     const engine = parseEngineAddr(readString(env, "ENGINE_ADDR", DEFAULTS.engineAddr));
     const logLevel = readString(env, "FRONT_PANEL_LOG", DEFAULTS.logLevel).toLowerCase();

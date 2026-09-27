@@ -21,19 +21,34 @@
         "watch_dog_win": "npm run launch:prebuilt",
         "watch_dog_mac": "npm run launch:prebuilt",
         "build_dev": "npm run build:dev",
-        "buildAndLaunch": "npm run build && npm run launch:prebuilt"
+        "buildAndLaunch": "npm run build && npm run launch:prebuilt",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "check": "npm run lint && npm run format:check && npm run test"
     },
     "dependencies": {
         "express": "^4.21.0",
         "http-proxy-middleware": "^3.0.2"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/express": "^5.0.0",
         "@types/node": "^22.7.4",
+        "@vitest/coverage-v8": "^5.0.2",
         "chart.js": "^4.4.7",
         "chartjs-plugin-zoom": "^2.2.0",
+        "eslint": "^10.11.0",
+        "eslint-plugin-import-x": "^4.17.1",
+        "globals": "^17.12.0",
+        "jsdom": "^30.1.1",
         "nodemon": "^3.1.7",
+        "prettier": "^3.9.9",
         "three": "^0.170.0",
+        "vitest": "^5.0.2",
         "webpack": "^5.96.1",
         "webpack-cli": "^5.1.4"
     }

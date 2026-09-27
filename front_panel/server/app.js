@@ -77,7 +77,10 @@ function staticDir(dir) {
  * @param {import("./config").Config} config
  */
 function createApp(config) {
-    if (!fs.existsSync(path.join(config.distDir, "index.html")) && !fs.existsSync(path.join(config.publicDir, "index.html"))) {
+    if (
+        !fs.existsSync(path.join(config.distDir, "index.html")) &&
+        !fs.existsSync(path.join(config.publicDir, "index.html"))
+    ) {
         log.warn("app", "no index.html found; run `npm run build` first", {
             distDir: config.distDir,
         });
