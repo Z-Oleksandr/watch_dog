@@ -73,6 +73,12 @@ Note: the set of disks and temperature sensors is detected once when the engine 
 
 Each storage gauge shows its drive's temperature above the needle hub, refreshed every 30 seconds. When there are several disks, the summary gauge shows the average, or the hottest drive that is over its limit. The number turns red at a threshold that depends on the drive type:
 
+To activate:
+`sudo modprobe drivetemp && echo drivetemp | sudo tee /etc/modules-load.d/drivetemp.conf`
+
+To undo: 
+`sudo rm /etc/modules-load.d/drivetemp.conf && sudo modprobe -r drivetemp`
+
 | Drive | Red from |
 | --- | --- |
 | Spinning disk (HDD) | 55 °C |
