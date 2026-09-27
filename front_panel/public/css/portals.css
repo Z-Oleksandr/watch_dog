@@ -11,7 +11,7 @@
     top: 100px;
     left: 100px;
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
-    z-index: 10;
+    z-index: var(--z-portal);
 }
 
 .portal.portalMin {
@@ -30,6 +30,7 @@
     padding: 3px;
     cursor: grab;
     user-select: none;
+    touch-action: none;
 }
 
 .portal-header p {
@@ -77,6 +78,8 @@
     align-items: center;
     justify-content: center;
     user-select: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .portal-btn:hover {
