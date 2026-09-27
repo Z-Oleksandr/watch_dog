@@ -49,6 +49,61 @@ export function sunburstEngraving(ctx, cx, cy, r, rays = 36, alpha = 0.05) {
     ctx.restore();
 }
 
+/**
+ * The glowing needle at `angle` and the brass hub it pivots on. `s` is the
+ * gauge's square size in backing pixels.
+ */
+export function drawNeedle(ctx, cx, cy, s, angle) {
+    const theme = getTheme();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.shadowColor = theme.glow;
+    ctx.shadowBlur = s * 0.03;
+    const needle = ctx.createLinearGradient(0, 0, s * 0.31, 0);
+    needle.addColorStop(0, theme.brassLight);
+    needle.addColorStop(1, theme.glow);
+    ctx.fillStyle = needle;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.07, -s * 0.014);
+    ctx.lineTo(s * 0.31, 0);
+    ctx.lineTo(-s * 0.07, s * 0.014);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = brassRingGradient(ctx, cx, cy, s * 0.045);
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.045, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = theme.face;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.022, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+/**
+ * Offset of the auxiliary reading above the centre, midway between the hub
+ * (0.045) and the lower edge of the top numeral (0.235 less half its 0.075 font).
+ */
+const AUX_READING_OFFSET = 0.12;
+const AUX_READING_FONT = 0.06;
+const MIN_AUX_FONT_PX = 9;
+
+/**
+ * A small secondary reading between the hub and the top numerals, drawn
+ * under the needle. Cream normally, ruby when `alert` is set.
+ * @param {{ text: string, alert: boolean }} reading
+ */
+export function drawAuxReading(ctx, cx, cy, s, reading) {
+    const theme = getTheme();
+    ctx.fillStyle = reading.alert ? theme.ruby : theme.cream;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `500 ${Math.max(MIN_AUX_FONT_PX, s * AUX_READING_FONT)}px ${theme.fontBody}`;
+    ctx.fillText(reading.text, cx, cy - s * AUX_READING_OFFSET);
+}
+
 /** Background texture for the control panel scene. */
 export function drawSunburstTexture(size = 512) {
     const theme = getTheme();

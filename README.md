@@ -31,14 +31,15 @@ The main idea is to be able to see the state of the server's system using any de
 And that is basically it, **however** that is more of a test run. In order to fulfill the main purpose of the app it has to run in the background on a server (as an example we will take a server running a linux OS) and be accessible at any time from any other device in the local network (it could also be set up to only be accessible from one specific device, but we will save that for later).
 
 1. This step remains the same => download and unpack the release (or clone and build from source).
-2. Choose a process manager, which will allow the app to run in the background, for example pm2 (a process manager for Node.js apps)
-3. Execute `npm install -g pm2`
-4. Move to front_panel dir `cd front_panel/`
-5. Execute `npm ci --omit=dev` (from a release) or `npm install && npm run build` (from source)
-6. Start the app `pm2 start npm --name watch_dog -- run watch_dog`
-7. If you have firewall enabled, allow access at port 9000: `ufw allow 9000`. The browser talks to the engine through the front panel (`/ws`), so port 8999 stays closed; the launcher binds the engine to `127.0.0.1` only.
-8. Now you can access the app from any device in your local network at `http://<server-private-ip>:9000`
-9. To have pm2 automatically run on system startup execute: `pm2 startup`
+2. If the server has SATA drives (HDD or SATA SSD), load the `drivetemp` kernel module so their temperatures can be shown, now and on every boot: `sudo modprobe drivetemp && echo drivetemp | sudo tee /etc/modules-load.d/drivetemp.conf`. NVMe drives need nothing. This is the only step that needs root; the app itself runs as a normal user. See [Drive temperatures](#drive-temperatures).
+3. Choose a process manager, which will allow the app to run in the background, for example pm2 (a process manager for Node.js apps)
+4. Execute `npm install -g pm2`
+5. Move to front_panel dir `cd front_panel/`
+6. Execute `npm ci --omit=dev` (from a release) or `npm install && npm run build` (from source)
+7. Start the app `pm2 start npm --name watch_dog -- run watch_dog`
+8. If you have firewall enabled, allow access at port 9000: `ufw allow 9000`. The browser talks to the engine through the front panel (`/ws`), so port 8999 stays closed; the launcher binds the engine to `127.0.0.1` only.
+9. Now you can access the app from any device in your local network at `http://<server-private-ip>:9000`
+10. To have pm2 automatically run on system startup execute: `pm2 startup`
 
 Note: the launcher makes the engine binary executable itself. If that fails (read-only filesystem), run `chmod +x engine/app_linux/engine` from the project root.
 
@@ -67,6 +68,34 @@ The engine reads two environment variables, both optional:
 The engine stops cleanly on `SIGINT` and `SIGTERM`, closing open browser connections with a proper close frame first, so `pm2 restart watch_dog` and `pm2 stop watch_dog` are safe.
 
 Note: the set of disks and temperature sensors is detected once when the engine starts. If you attach a new drive, restart the engine to have it appear on the panel.
+
+### Drive temperatures
+
+Each storage gauge shows its drive's temperature above the needle hub, refreshed every 30 seconds. When there are several disks, the summary gauge shows the average, or the hottest drive that is over its limit. The number turns red at a threshold that depends on the drive type:
+
+To activate:
+`sudo modprobe drivetemp && echo drivetemp | sudo tee /etc/modules-load.d/drivetemp.conf`
+
+To undo: 
+`sudo rm /etc/modules-load.d/drivetemp.conf && sudo modprobe -r drivetemp`
+
+| Drive | Red from |
+| --- | --- |
+| Spinning disk (HDD) | 55 °C |
+| NVMe / SSD reporting its own limit | That limit (NVMe WCTEMP) minus 5 °C |
+| SSD without a reported limit | 70 °C |
+
+A disk on LVM, LUKS or software RAID shows the hottest drive beneath it, against the strictest threshold among them.
+
+- Linux: temperatures are read from the kernel's hwmon sensors. The engine needs no root for this.
+- macOS (Apple silicon): the internal SSD's temperature (the `NAND` sensor, also shown in the Temperature section as "SSD") is shown on the system disk. External drives show no temperature.
+- Windows: not supported yet.
+- NVMe drives work out of the box on kernel 5.5 or newer.
+- SATA drives need the `drivetemp` kernel module (setup step 2 above). The engine logs a hint at startup for every SATA drive without a sensor. After loading the module, restart the engine (`pm2 restart watch_dog`), since sensors are detected once at startup.
+- Reading a SATA drive's temperature sends it a SMART command, which on some HDDs resets the spin-down timer. Drives are only read while a panel is open, so disks can still spin down when nobody is watching.
+- ZFS datasets and network shares have no single drive behind them and show no temperature.
+
+Temperature section gauges turn their reading red at 90 °C, or earlier for a sensor whose critical value is low (at 85 % of it, where its red zone starts). The summary turns red whenever any sensor does.
 
 ## Instruction manual:
 
@@ -112,5 +141,5 @@ From `front_panel/`:
 - `npm run dev` serves the page with automatic restarts of the host (run the engine separately with `npm run launch:none` plus `cargo run` in `engine/`, or use `npm run launch`).
 - `npm run build:dev` rebuilds the bundle on every change; `npm run build` produces the production bundle in `dist/`.
 - `npm run check` runs ESLint, Prettier and the Vitest suite; CI runs the same plus `npm audit` on runtime dependencies.
-- Development builds accept `?ws=ws://host:8999` to connect straight to a remote engine, and `?mock_temps=1|none` / `?mock_disks=N` to fake sensors. Neither exists in production builds.
+- Development builds accept `?ws=ws://host:8999` to connect straight to a remote engine, and `?mock_temps=1|none` / `?mock_disks=N` to fake sensors (mocked disks include drive temperatures). Neither exists in production builds.
 - Coding rules live in `engine/code_rules.md` and `front_panel/code_rules.md`.

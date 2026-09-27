@@ -18,6 +18,25 @@ pub const STATS_INTERVAL: Duration = Duration::from_secs(1);
 /// ~12 ms per sensor, which does not belong on the 1 Hz path.
 pub const TEMP_INTERVAL: Duration = Duration::from_secs(5);
 
+/// Drive temperatures are read on the slowest cadence of all. A drive's
+/// thermal mass makes its temperature change over minutes, and every read is a
+/// command to the drive itself: ~12 ms for an NVMe admin command, a SMART
+/// query for a SATA drive through `drivetemp`.
+pub const DISK_TEMP_INTERVAL: Duration = Duration::from_secs(30);
+
+/// Warning threshold for spinning disks, in °C. HDD datasheets rate operation
+/// up to 55-60 °C and failure rates rise well before that, so the drive's own
+/// (usually 60-65 °C) limit would warn too late.
+pub const HDD_TEMP_WARNING_C: f32 = 55.0;
+
+/// Warning threshold for solid-state drives that do not report their own
+/// limit, in °C. SATA SSDs are typically rated for 0-70 °C.
+pub const SSD_TEMP_WARNING_FALLBACK_C: f32 = 70.0;
+
+/// Subtracted from the limit a solid-state drive reports (NVMe WCTEMP, where
+/// it starts throttling) so the panel warns before the drive is at its limit.
+pub const DRIVE_LIMIT_MARGIN_C: f32 = 5.0;
+
 /// Delay between a client receiving its static payloads and the start of its
 /// live stats stream. The front-end boot animation runs for 5 s and is
 /// interrupted by the first stats frame, so this window must be preserved.
@@ -78,6 +97,13 @@ pub fn temp_every_n_ticks() -> u32 {
     ((temps / stats).max(1)) as u32
 }
 
+/// Number of stats frames between drive temperature reads.
+pub fn disk_temp_every_n_ticks() -> u32 {
+    let stats = STATS_INTERVAL.as_millis().max(1);
+    let disk_temps = DISK_TEMP_INTERVAL.as_millis().max(1);
+    ((disk_temps / stats).max(1)) as u32
+}
+
 /// Number of stats frames between recorder samples.
 pub fn log_sample_every_n_ticks() -> u32 {
     let stats = STATS_INTERVAL.as_millis().max(1);
@@ -92,6 +118,11 @@ mod tests {
     #[test]
     fn temp_cadence_is_five_stats_ticks() {
         assert_eq!(temp_every_n_ticks(), 5);
+    }
+
+    #[test]
+    fn disk_temp_cadence_is_thirty_stats_ticks() {
+        assert_eq!(disk_temp_every_n_ticks(), 30);
     }
 
     #[test]

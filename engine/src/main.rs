@@ -9,6 +9,7 @@ use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
 mod config;
+mod disk_temps;
 mod docker_mon;
 mod helpers;
 mod logfiles;
@@ -34,7 +35,16 @@ async fn main() -> ExitCode {
 
     // The machine is enumerated once. Everything downstream indexes readings
     // against this snapshot, so it must not be rebuilt while the engine runs.
-    let (topology, handles) = match topology::probe() {
+    // Probing reads sysfs and procfs (and queries every drive's sensor), so
+    // it runs on the blocking pool like every other hardware read.
+    let probed = match tokio::task::spawn_blocking(topology::probe).await {
+        Ok(probed) => probed,
+        Err(e) => {
+            error!("The topology probe task failed: {}", e);
+            return ExitCode::FAILURE;
+        }
+    };
+    let (topology, handles) = match probed {
         Ok(probed) => probed,
         Err(e) => {
             error!("Could not read the system topology: {}", e);

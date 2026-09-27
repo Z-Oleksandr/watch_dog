@@ -9,10 +9,11 @@ use crate::topology::{HardwareHandles, Topology};
 /// Live readings, broadcast to every connected client once per tick
 /// (`data_type` 1).
 ///
-/// `disks_used_space` and `temperatures` are positional: entry *i* corresponds
-/// to entry *i* of `disks_space` and `temp_sensors` in the `data_type` 0
-/// payload. The front-end indexes them that way, so their order and length must
-/// track the topology for the lifetime of the process.
+/// `disks_used_space`, `disks_temperatures` and `temperatures` are
+/// positional: entry *i* corresponds to entry *i* of `disks_space` (the first
+/// two) and `temp_sensors` in the `data_type` 0 payload. The front-end indexes
+/// them that way, so their order and length must track the topology for the
+/// lifetime of the process.
 #[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct SystemStats {
@@ -25,6 +26,11 @@ pub struct SystemStats {
     pub network_transmitted: u64,
     uptime: u64,
     temperatures: Vec<f32>,
+    /// Drive temperature per disk in °C, positional with `disks_space`;
+    /// `null` where a disk has no sensor or the read failed. Refreshed every
+    /// `DISK_TEMP_INTERVAL`. Omitted when no disk has a sensor.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    disks_temperatures: Vec<Option<f32>>,
 }
 
 /// Refreshes only what the payload actually contains.
@@ -39,6 +45,7 @@ pub fn collect(
     handles: &mut HardwareHandles,
     topology: &Topology,
     temperatures: Vec<f32>,
+    disks_temperatures: Vec<Option<f32>>,
 ) -> SystemStats {
     handles.system.refresh_cpu_usage();
     handles.system.refresh_memory();
@@ -67,7 +74,8 @@ pub fn collect(
             disk.mount_point(),
             &mut seen_this_tick,
         ) {
-            disks_used_space.push((disk.total_space() - disk.available_space()) / 1_000_000);
+            let used = disk.total_space().saturating_sub(disk.available_space());
+            disks_used_space.push(used / 1_000_000);
         }
     }
 
@@ -75,7 +83,7 @@ pub fn collect(
     let mut network_received = 0;
     let mut network_transmitted = 0;
 
-    for (_iface, data) in handles.networks.iter() {
+    for data in handles.networks.values() {
         network_received += data.received() / 1000;
         network_transmitted += data.transmitted() / 1000;
     }
@@ -92,5 +100,6 @@ pub fn collect(
         network_transmitted,
         uptime,
         temperatures,
+        disks_temperatures,
     }
 }

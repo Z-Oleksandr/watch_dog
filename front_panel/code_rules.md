@@ -331,6 +331,11 @@ The wire format is owned jointly with the engine. It is documented here and in t
 | 5           | Container list                            | On request             |
 | ≥ 6         | Container output stream on a channel      | Streaming              |
 
+Drive temperatures ride on existing frames: `disks_temp_warning` (topology) and
+`disks_temperatures` (stats, refreshed every 30th frame) are optional per-disk
+°C arrays aligned with `disks_space`, with `null` for a disk without a sensor.
+The validator rejects a length mismatch; the panel skips unchanged values.
+
 ### Rules
 
 1. **One protocol module.** `protocol/messages.js` holds the `DATA_TYPE` and `REQUEST_TYPE` constants and a validator per frame type. No other file spells `data_type` or a request string.

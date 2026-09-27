@@ -1,10 +1,9 @@
 import { prefersReducedMotion } from "../../util/device.js";
 import { getTheme } from "../../util/theme.js";
 import { animate, stopAnimating } from "./animator.js";
-import { brassRingGradient, lacquerFace, percentZones, sunburstEngraving } from "./drawing.js";
+import { drawAuxReading, drawNeedle, percentZones } from "./drawing.js";
+import { angleFor, drawFace } from "./face.js";
 
-const START_ANGLE = 0.75 * Math.PI;
-const ANGLE_RANGE = 1.5 * Math.PI;
 const ANIM_MS = 600;
 const SWEEP_UP_MS = 1035;
 const SWEEP_DOWN_MS = 1265;
@@ -37,6 +36,8 @@ const DEFAULT_OPTS = Object.freeze({
     minorPerMajor: 4,
     format: (v) => Math.round(v),
     digital: true,
+    /** The digital readout turns ruby once the shown value reaches this; null disables it. */
+    alertAt: null,
 });
 
 /**
@@ -52,6 +53,8 @@ export class DecoGauge {
     #anim = null;
     #resizeTimer = null;
     #reducedMotion;
+    #auxReading = null;
+    #forcedAlert = false;
 
     constructor(container, opts = {}) {
         this.opts = { ...DEFAULT_OPTS, ...opts };
@@ -119,6 +122,49 @@ export class DecoGauge {
             then: { from: this.opts.max, to: this.opts.min, duration: SWEEP_DOWN_MS },
         };
         animate(this);
+    }
+
+    /**
+     * Shows a small secondary reading above the hub (e.g. a drive temperature),
+     * or clears it with null. Redraws only when the reading changes.
+     * @param {{ text: string, alert: boolean } | null} reading
+     */
+    setAuxReading(reading) {
+        const current = this.#auxReading;
+        const next = reading ? { text: reading.text, alert: Boolean(reading.alert) } : null;
+        if (current?.text === next?.text && current?.alert === next?.alert) {
+            return;
+        }
+        this.#auxReading = next;
+        if (!this.#anim) {
+            this.#render();
+        }
+    }
+
+    /**
+     * Whether the readout would be ruby when showing `value` (the `alertAt`
+     * rule), so a cluster can mirror its members' alerts on the summary.
+     * @param {number} value
+     */
+    isAlertAt(value) {
+        return (
+            this.opts.alertAt !== null && this.opts.format(this.#clamp(value)) >= this.opts.alertAt
+        );
+    }
+
+    /**
+     * Turns the readout ruby regardless of `alertAt`, e.g. for a summary whose
+     * members each have their own threshold.
+     * @param {boolean} isAlert
+     */
+    setForcedAlert(isAlert) {
+        if (this.#forcedAlert === isAlert) {
+            return;
+        }
+        this.#forcedAlert = isAlert;
+        if (!this.#anim) {
+            this.#render();
+        }
     }
 
     setMax(max, { zones, majorTicks, format } = {}) {
@@ -194,95 +240,8 @@ export class DecoGauge {
         return Math.min(this.opts.max, Math.max(this.opts.min, value));
     }
 
-    #angleFor(value) {
-        const span = this.opts.max - this.opts.min || 1;
-        return START_ANGLE + ((value - this.opts.min) / span) * ANGLE_RANGE;
-    }
-
     #buildStatic() {
-        const theme = getTheme();
-        const ctx = this.#staticLayer.getContext("2d");
-        const w = this.#staticLayer.width;
-        const h = this.#staticLayer.height;
-        const s = Math.min(w, h);
-        const cx = w / 2;
-        const cy = h / 2;
-        ctx.clearRect(0, 0, w, h);
-        if (s === 0) return;
-
-        const bezelR = s * 0.47;
-        ctx.fillStyle = brassRingGradient(ctx, cx, cy, bezelR);
-        ctx.beginPath();
-        ctx.arc(cx, cy, bezelR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = theme.bezelInner;
-        ctx.beginPath();
-        ctx.arc(cx, cy, bezelR - s * 0.018, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = theme.brassDark;
-        ctx.lineWidth = Math.max(1, s * 0.004);
-        ctx.beginPath();
-        ctx.arc(cx, cy, bezelR - s * 0.03, 0, Math.PI * 2);
-        ctx.stroke();
-
-        lacquerFace(ctx, cx, cy, s * 0.42);
-        sunburstEngraving(ctx, cx, cy, s * 0.42);
-
-        for (const zone of this.opts.zones) {
-            ctx.strokeStyle = zone.color;
-            ctx.lineWidth = s * 0.022;
-            ctx.beginPath();
-            ctx.arc(cx, cy, s * 0.365, this.#angleFor(zone.from), this.#angleFor(zone.to));
-            ctx.stroke();
-        }
-
-        const majors = Math.max(2, this.opts.majorTicks);
-        const minors = Math.max(0, this.opts.minorPerMajor);
-        const totalTicks = (majors - 1) * (minors + 1);
-        for (let i = 0; i <= totalTicks; i++) {
-            const angle = START_ANGLE + (i / totalTicks) * ANGLE_RANGE;
-            const isMajor = i % (minors + 1) === 0;
-            const inner = isMajor ? s * 0.3 : s * 0.325;
-            ctx.strokeStyle = isMajor ? theme.brass : theme.brassDark;
-            ctx.lineWidth = isMajor ? Math.max(1.5, s * 0.008) : Math.max(1, s * 0.004);
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
-            ctx.lineTo(cx + Math.cos(angle) * s * 0.35, cy + Math.sin(angle) * s * 0.35);
-            ctx.stroke();
-        }
-
-        const span = this.opts.max - this.opts.min;
-        ctx.fillStyle = theme.cream;
-        ctx.font = `${Math.max(9, s * 0.075)}px ${theme.fontBody}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        for (let i = 0; i < majors; i++) {
-            const value = this.opts.min + (i / (majors - 1)) * span;
-            const angle = START_ANGLE + (i / (majors - 1)) * ANGLE_RANGE;
-            const nr = s * 0.235;
-            ctx.fillText(
-                String(this.opts.format(value)),
-                cx + Math.cos(angle) * nr,
-                cy + Math.sin(angle) * nr
-            );
-        }
-
-        if (this.opts.label) {
-            const labelY = cy + s * 0.345;
-            ctx.fillStyle = theme.brass;
-            ctx.font = `600 ${Math.max(9, s * 0.062)}px ${theme.fontBody}`;
-            const text = this.opts.label.toUpperCase().split("").join("  ");
-            ctx.fillText(text, cx, labelY);
-            const tw = ctx.measureText(text).width / 2 + s * 0.03;
-            ctx.strokeStyle = theme.brassDark;
-            ctx.lineWidth = Math.max(1, s * 0.004);
-            for (const side of [-1, 1]) {
-                ctx.beginPath();
-                ctx.moveTo(cx + side * tw, labelY);
-                ctx.lineTo(cx + side * (tw + s * 0.05), labelY);
-                ctx.stroke();
-            }
-        }
+        drawFace(this.#staticLayer, this.opts);
     }
 
     #render() {
@@ -298,40 +257,20 @@ export class DecoGauge {
         ctx.clearRect(0, 0, w, h);
         ctx.drawImage(this.#staticLayer, 0, 0);
 
-        const angle = this.#angleFor(this.#displayValue);
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(angle);
-        ctx.shadowColor = theme.glow;
-        ctx.shadowBlur = s * 0.03;
-        const needle = ctx.createLinearGradient(0, 0, s * 0.31, 0);
-        needle.addColorStop(0, theme.brassLight);
-        needle.addColorStop(1, theme.glow);
-        ctx.fillStyle = needle;
-        ctx.beginPath();
-        ctx.moveTo(-s * 0.07, -s * 0.014);
-        ctx.lineTo(s * 0.31, 0);
-        ctx.lineTo(-s * 0.07, s * 0.014);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-
-        ctx.fillStyle = brassRingGradient(ctx, cx, cy, s * 0.045);
-        ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.045, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = theme.face;
-        ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.022, 0, Math.PI * 2);
-        ctx.fill();
+        if (this.#auxReading) {
+            drawAuxReading(ctx, cx, cy, s, this.#auxReading);
+        }
+        drawNeedle(ctx, cx, cy, s, angleFor(this.opts, this.#displayValue));
 
         if (this.opts.digital) {
-            ctx.fillStyle = theme.cream;
+            const shown = this.opts.format(this.#displayValue);
+            const isAlert = this.#forcedAlert || this.isAlertAt(this.#displayValue);
+            ctx.fillStyle = isAlert ? theme.ruby : theme.cream;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.font = `500 ${Math.max(10, s * 0.075)}px ${theme.fontBody}`;
             const unit = this.opts.unit ? ` ${this.opts.unit}` : "";
-            ctx.fillText(`${this.opts.format(this.#displayValue)}${unit}`, cx, cy + s * 0.255);
+            ctx.fillText(`${shown}${unit}`, cx, cy + s * 0.255);
         }
     }
 }
