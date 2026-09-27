@@ -33,6 +33,8 @@ export class GaugeCluster {
         this.id = id;
         this.memberOpts = members;
         this.aggregate = summary.aggregate || "avg";
+        /** The summary readout turns ruby whenever a member's does. */
+        this.alertFromMembers = Boolean(summary.alertFromMembers);
         this.values = members.map(() => 0);
 
         this.root = document.createElement("section");
@@ -139,6 +141,27 @@ export class GaugeCluster {
             });
         }
         this.summaryGauge.set(summaryValue !== undefined ? summaryValue : this.#summarize(values));
+        if (this.alertFromMembers && this.memberGauges.length > 1) {
+            this.summaryGauge.setForcedAlert(
+                this.memberGauges.some(
+                    (gauge, i) => values[i] !== undefined && gauge.isAlertAt(values[i])
+                )
+            );
+        }
+    }
+
+    /**
+     * Shows secondary readings (drive temperatures) above the hubs. With a
+     * single member the summary gauge is that member, so only
+     * `summaryReading` is drawn.
+     * @param {Array<{ text: string, alert: boolean } | null>} memberReadings
+     * @param {{ text: string, alert: boolean } | null} summaryReading
+     */
+    setAuxReadings(memberReadings, summaryReading) {
+        if (this.memberGauges.length > 1) {
+            this.memberGauges.forEach((gauge, i) => gauge.setAuxReading(memberReadings[i] ?? null));
+        }
+        this.summaryGauge.setAuxReading(summaryReading);
     }
 
     #summarize(values) {
@@ -163,6 +186,8 @@ export class GaugeCluster {
     }
 
     zero() {
+        this.setAuxReadings([], null);
+        this.summaryGauge.setForcedAlert(false);
         this.summaryGauge.set(this.summaryGauge.opts.min);
         if (this.memberGauges.length > 1) {
             this.memberGauges.forEach((gauge) => gauge.set(gauge.opts.min));

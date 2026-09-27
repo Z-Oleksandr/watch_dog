@@ -94,6 +94,7 @@ src/
 ├── system_stats.rs      ← Per-tick collection (blocking; called only from spawn_blocking)
 ├── system_info.rs       ← Static host description, probed once
 ├── temperatures.rs      ← Sensor discovery, filtering and reading
+├── disk_temps/          ← Drive temperatures: sysfs discovery at startup, hwmon reads, per-drive thresholds
 ├── helpers.rs           ← Small pure helpers (disk filtering)
 ├── ws/
 │   ├── mod.rs           ← AppContext, IncomingMessage
@@ -198,8 +199,8 @@ Every outbound message carries a numeric `data_type`:
 
 | `data_type` | Payload | Sent |
 | --- | --- | --- |
-| `0` | `SystemData` — CPUs, disks, RAM, temperature sensors | First message of every connection |
-| `1` | `SystemStats` — live readings | Every `STATS_INTERVAL` after `CLIENT_STREAM_DELAY` |
+| `0` | `SystemData` — CPUs, disks, RAM, temperature sensors, optional `disks_temp_warning` | First message of every connection |
+| `1` | `SystemStats` — live readings, optional `disks_temperatures` (refreshed every `DISK_TEMP_INTERVAL`) | Every `STATS_INTERVAL` after `CLIENT_STREAM_DELAY` |
 | `2` | `SystemInfo` — host description, uptime, Docker version | Second message of every connection |
 | `3` | Log list | Reply to `get_log_list` |
 | `4` | Log data | Reply to `get_log_data` |
@@ -213,7 +214,7 @@ Inbound messages are `{ "type": "<name>", "message": <u64> }` with types `start_
 1. **This table is updated in the same change** that adds, removes or alters a message.
 2. **New `data_type` values must not collide** with existing ones or with the container channel range.
 3. **Message order is part of the contract**: `0` then `2` then, after the boot delay, `1`. The front-end builds its gauges from `0` and indexes later readings against it.
-4. **Positional arrays are part of the contract**: `disks_used_space[i]` ↔ `disks_space[i]`, `temperatures[i]` ↔ `temp_sensors[i]`, for the life of the process.
+4. **Positional arrays are part of the contract**: `disks_used_space[i]`, `disks_temperatures[i]` and `disks_temp_warning[i]` ↔ `disks_space[i]`, `temperatures[i]` ↔ `temp_sensors[i]`, for the life of the process. `null` marks a disk without a drive temperature; both drive-temperature fields are omitted when no disk has a sensor.
 5. **Field order is part of the contract where the front-end relies on it** (`SystemInfo` is laid out by key order). Don't reorder struct fields casually.
 6. **Stable sentinel values stay stable** (`DOCKER_UNAVAILABLE = "false"` is displayed verbatim).
 7. **Breaking changes** (removing/renaming a field, changing a type, unit, meaning or order) are made in lockstep with `front_panel` and use a `!` conventional commit so the release is a major bump.
@@ -303,7 +304,7 @@ The engine is a guest on the machine it measures.
 1. **Sample once, serialize once, broadcast `Arc`s.** Cost must be O(1) in the number of connected clients for sampling and serialization; per-client work is limited to sending an already-built frame.
 2. **Zero cost when idle.** The sampler skips all work while `receiver_count() == 0`. New periodic work must follow the same rule or justify why it can't.
 3. **Refresh only what is reported.** Never call `System::refresh_all()` or refresh processes — they walk every process on the host. Use targeted refreshes (`refresh_cpu_usage`, `refresh_memory`, `disks.refresh`, `networks.refresh`).
-4. **Expensive readings run on a slower cadence** (temperatures every `TEMP_INTERVAL`) and cached values are reused in between.
+4. **Expensive readings run on a slower cadence** (temperatures every `TEMP_INTERVAL`, drive temperatures every `DISK_TEMP_INTERVAL`) and cached values are reused in between. Cadences restart after an idle period so a new client never sees readings cached before it.
 5. **Probe static data once at startup** (`Topology`, `SystemInfoTemplate`, Docker version); refresh only the parts that change (uptime).
 6. **No O(n²) growth over time.** Long-running jobs must not re-read, re-parse or re-sort accumulated data on every iteration.
 7. **Avoid allocations and clones on the per-tick path**; pre-size collections (`Vec::with_capacity`) where the size is known.
@@ -328,7 +329,7 @@ Units are part of the wire contract and are consistent per field:
 | `init_ram_total`, `ram_total`, `ram_used` | MB (10⁶ bytes) |
 | `network_received`, `network_transmitted` | KB (10³ bytes) since previous tick |
 | `cpu_usage` | percent per logical CPU |
-| `temperatures`, `critical` | °C |
+| `temperatures`, `critical`, `disks_temperatures`, `disks_temp_warning` | °C |
 | `uptime` | seconds |
 
 **Rules:**
@@ -491,7 +492,7 @@ Supported targets: **Linux x86_64** (primary — headless servers), **Windows x8
 ### Rules
 
 1. **Unit tests live next to the code** in `#[cfg(test)] mod tests`. Async tests use `#[tokio::test]`.
-2. **Extract logic into pure functions so it is testable** without hardware, sockets or Docker: filtering (`is_not_pidor`, `is_usable_sensor`), parsing (`get_index_and_channel`, `parse_level`), aggregation (`Accumulator`), cadence (`temp_every_n_ticks`).
+2. **Extract logic into pure functions so it is testable** without hardware, sockets or Docker: filtering (`is_monitored_disk`, `is_usable_sensor`), parsing (`get_index_and_channel`, `parse_level`), aggregation (`Accumulator`), cadence (`temp_every_n_ticks`).
 3. **Test error and edge paths**, not just happy paths: empty inputs, `NaN`, zero durations, missing separators, duplicate registrations, overflow boundaries.
 4. **Use explicit assertions** (`assert_eq!`, `assert!(matches!(..))`). `.expect("why this can't fail")` is allowed in tests; bare `.unwrap()` is not.
 5. **One logical behavior per test, with a descriptive name**: `registry_refuses_a_duplicate_channel`, not `test_registry`.
@@ -542,14 +543,12 @@ Places where the current code does not yet meet these rules. Fix them opportunis
 2. **Truncating casts of client input**: `incoming.message as u32` in `ws::read` for `get_log_data` and `stop_container_output`. Use `u32::try_from` ([§5](#5-input-validation)).
 3. **Container channel collides with `data_type` 0**: container index 0 encodes to channel 0, the same value as the `SystemData` message ([§6](#6-wire-protocol-contract), rule 2).
 4. **Non-atomic log writes**: `write_json` truncates and rewrites the target file in place; a crash mid-write corrupts the recording ([§11](#11-file-system--recorded-logs)).
-5. **Unchecked subtraction on hardware values**: `disk.total_space() - disk.available_space()` in `system_stats::collect` ([§10](#10-hardware-topology--measurements)).
-6. **No `Origin` validation** on the WebSocket handshake ([§16](#16-security), rule 4).
-7. **No `#![forbid(unsafe_code)]`** at the crate root ([§16](#16-security)).
-8. **CI treats `fmt` and `clippy` as advisory**; they should be blocking, with clippy at `-D warnings`. Clippy currently reports one warning (iterating a map's values). No `cargo audit` step ([§18](#18-dependencies--toolchain)).
-9. **No protocol-level integration tests** ([§19](#19-testing), rule 7).
-10. **Committed runtime data**: `engine/log_2024-12-28_*.json` are old recorded logs in the source tree ([§20](#20-version-control--releases), rule 4).
-11. **Legacy naming**: `helpers::is_not_pidor` and the `pidors` list ([§3](#3-architecture--code-organization)).
-12. **Log retention**: nothing limits the number or total size of files in `LOG_DIR`.
+5. **No `Origin` validation** on the WebSocket handshake ([§16](#16-security), rule 4).
+6. **No `#![forbid(unsafe_code)]`** at the crate root ([§16](#16-security)).
+7. **CI treats `fmt` and `clippy` as advisory**; they should be blocking, with clippy at `-D warnings` (which now passes). No `cargo audit` step ([§18](#18-dependencies--toolchain)).
+8. **No protocol-level integration tests** ([§19](#19-testing), rule 7).
+9. **Committed runtime data**: `engine/log_2024-12-28_*.json` are old recorded logs in the source tree ([§20](#20-version-control--releases), rule 4).
+10. **Log retention**: nothing limits the number or total size of files in `LOG_DIR`.
 
 ---
 

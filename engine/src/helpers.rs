@@ -2,6 +2,9 @@ use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::path::Path;
 
+// In-memory and layered filesystems that report no physical storage
+const VIRTUAL_FILESYSTEMS: [&str; 3] = ["tmpfs", "overlay", "devtmpfs"];
+
 // System partitions and snap images are not storage worth monitoring
 const EXCLUDED_MOUNT_PREFIXES: [&str; 3] = ["/boot", "/var/snap", "/var/lib/snapd"];
 
@@ -14,7 +17,8 @@ fn is_excluded_mount(mount_point: &Path) -> bool {
     }
 }
 
-fn clean_disk_name(disk_name: &OsStr) -> Option<String> {
+/// The device name sysinfo reports, without the quotes some platforms add.
+pub fn clean_disk_name(disk_name: &OsStr) -> Option<String> {
     disk_name
         .to_str()
         .map(|name| name.trim_matches('\"').to_string())
@@ -24,18 +28,16 @@ fn clean_disk_name(disk_name: &OsStr) -> Option<String> {
 /// `disk_register` the first time it is seen.
 ///
 /// For linux we need to filter non-physical drives.
-pub fn is_not_pidor(
+pub fn is_monitored_disk(
     disk_name: &OsStr,
     disk_register: &mut HashSet<String>,
     disk_mount_point: &Path,
 ) -> bool {
-    let pidors = ["tmpfs", "overlay", "devtmpfs"];
-
     let name = match clean_disk_name(disk_name) {
         Some(name) => name,
         None => return false,
     };
-    if pidors.contains(&name.as_str()) || is_excluded_mount(disk_mount_point) {
+    if VIRTUAL_FILESYSTEMS.contains(&name.as_str()) || is_excluded_mount(disk_mount_point) {
         return false;
     }
     disk_register.insert(name)
@@ -75,12 +77,12 @@ mod tests {
     #[test]
     fn registers_a_physical_disk_once() {
         let mut register = HashSet::new();
-        assert!(is_not_pidor(
+        assert!(is_monitored_disk(
             os("/dev/nvme0n1p2"),
             &mut register,
             Path::new("/")
         ));
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
             os("/dev/nvme0n1p2"),
             &mut register,
             Path::new("/home")
@@ -91,13 +93,17 @@ mod tests {
     #[test]
     fn rejects_virtual_filesystems() {
         let mut register = HashSet::new();
-        assert!(!is_not_pidor(os("tmpfs"), &mut register, Path::new("/run")));
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
+            os("tmpfs"),
+            &mut register,
+            Path::new("/run")
+        ));
+        assert!(!is_monitored_disk(
             os("overlay"),
             &mut register,
             Path::new("/var/lib/docker")
         ));
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
             os("devtmpfs"),
             &mut register,
             Path::new("/dev")
@@ -108,17 +114,17 @@ mod tests {
     #[test]
     fn rejects_boot_and_snap_mounts() {
         let mut register = HashSet::new();
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
             os("/dev/sda1"),
             &mut register,
             Path::new("/boot/efi")
         ));
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
             os("/dev/loop0"),
             &mut register,
             Path::new("/var/snap/x")
         ));
-        assert!(!is_not_pidor(
+        assert!(!is_monitored_disk(
             os("/dev/loop1"),
             &mut register,
             Path::new("/var/lib/snapd/snaps")
@@ -129,7 +135,7 @@ mod tests {
     #[test]
     fn strips_quotes_from_disk_names() {
         let mut register = HashSet::new();
-        assert!(is_not_pidor(
+        assert!(is_monitored_disk(
             os("\"/dev/sda1\""),
             &mut register,
             Path::new("/")
@@ -140,7 +146,7 @@ mod tests {
     #[test]
     fn counts_a_registered_disk_once_per_tick() {
         let mut register = HashSet::new();
-        is_not_pidor(os("/dev/sda1"), &mut register, Path::new("/"));
+        is_monitored_disk(os("/dev/sda1"), &mut register, Path::new("/"));
 
         let mut seen = HashSet::new();
         assert!(is_initialized_disk(

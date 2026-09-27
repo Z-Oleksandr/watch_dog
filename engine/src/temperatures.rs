@@ -14,7 +14,7 @@ fn is_meaningless_label(label: &str) -> bool {
         .any(|part| lower.contains(part))
 }
 
-fn is_plausible_temperature(temperature: f32) -> bool {
+pub fn is_plausible_temperature(temperature: f32) -> bool {
     temperature.is_finite() && temperature > MIN_PLAUSIBLE_C && temperature < MAX_PLAUSIBLE_C
 }
 

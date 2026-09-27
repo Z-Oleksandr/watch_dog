@@ -1,95 +1,24 @@
 import { DecoGauge } from "../../render/gauge/deco_gauge.js";
 import { GaugeCluster } from "../../render/gauge/gauge_cluster.js";
 import { percentZones } from "../../render/gauge/drawing.js";
-import { getTheme } from "../../util/theme.js";
 import { log } from "../../util/logger.js";
-import { friendlySensorName } from "./sensor_names.js";
+import { driveReading, sameTemps, summarizeDriveTemps } from "./drive_temps.js";
+import {
+    NET_BASE_MAX,
+    distributeThreads,
+    groupSensors,
+    netZones,
+    tempClusterOptions,
+} from "./layout.js";
+import { buildUnavailableSection } from "./unavailable_section.js";
 
-const NET_BASE_MAX = 500;
 const NET_WIDE_MAX = 1000;
 const NET_TEST_KBPS = 999_000;
-const TEMP_FALLBACK_CRITICAL = 105;
 const MOBILE_BREAKPOINT_PX = 768;
 const MAX_CPU_CLUSTERS_DESKTOP = 4;
 const MAX_CPU_CLUSTERS_MOBILE = 2;
-const MAX_LABEL_CHARS = 14;
 
 const round = (v) => Math.round(v);
-
-function distributeThreads(total, clusters) {
-    const base = Math.floor(total / clusters);
-    const remainder = total % clusters;
-    return Array.from({ length: clusters }, (_, i) => base + (i < remainder ? 1 : 0));
-}
-
-function tempZones(critical) {
-    const theme = getTheme();
-    return [
-        { from: 0, to: 0.7 * critical, color: theme.emerald },
-        { from: 0.7 * critical, to: 0.85 * critical, color: theme.amber },
-        { from: 0.85 * critical, to: critical, color: theme.ruby },
-    ];
-}
-
-function netZones(max) {
-    const theme = getTheme();
-    if (max <= NET_BASE_MAX) {
-        return [{ from: 0, to: max, color: theme.emerald }];
-    }
-    return [
-        { from: 0, to: 0.8 * max, color: theme.emerald },
-        { from: 0.8 * max, to: 0.9 * max, color: theme.amber },
-        { from: 0.9 * max, to: max, color: theme.ruby },
-    ];
-}
-
-/** Groups sensors like "coretemp Core 0..7" into one gauge per group. */
-export function groupSensors(sensors) {
-    const groups = new Map();
-    sensors.forEach((sensor, index) => {
-        const name = sensor.label.replace(/[\s_-]*\d+$/, "").trim() || "sensor";
-        if (!groups.has(name)) {
-            groups.set(name, { name, indices: [], critical: null });
-        }
-        const group = groups.get(name);
-        group.indices.push(index);
-        if (sensor.critical && (!group.critical || sensor.critical > group.critical)) {
-            group.critical = sensor.critical;
-        }
-    });
-
-    const result = [...groups.values()];
-    const seen = new Map();
-    for (const group of result) {
-        const base = friendlySensorName(group.name);
-        const count = (seen.get(base) || 0) + 1;
-        seen.set(base, count);
-        group.display = count === 1 ? base : `${base} ${count}`;
-    }
-    return result;
-}
-
-function buildUnavailableSection(container, title, message) {
-    const root = document.createElement("section");
-    root.className = "deco-cluster";
-    const header = document.createElement("header");
-    header.className = "cluster-header";
-    const chevronL = document.createElement("span");
-    chevronL.className = "cluster-chevrons";
-    const heading = document.createElement("h2");
-    heading.textContent = title;
-    const chevronR = document.createElement("span");
-    chevronR.className = "cluster-chevrons";
-    header.append(chevronL, heading, chevronR);
-    const note = document.createElement("p");
-    note.className = "cluster-unavailable";
-    const noteText = document.createElement("span");
-    noteText.textContent = message;
-    note.appendChild(noteText);
-    root.append(header, note);
-    container.appendChild(root);
-    return root;
-}
 
 /**
  * The gauge dashboard: CPU, temperature and storage clusters plus RAM and
@@ -108,6 +37,8 @@ export class Panel {
     #tempGroups = [];
     #netTesting = false;
     #topologyKey = null;
+    #diskTempWarnings = [];
+    #lastDiskTemps = null;
 
     /**
      * @param {{ cpu: HTMLElement, temp: HTMLElement, storage: HTMLElement,
@@ -132,6 +63,7 @@ export class Panel {
             data.disks_space,
             data.init_ram_total,
             data.temp_sensors,
+            data.disks_temp_warning,
         ]);
         if (key === this.#topologyKey) {
             return;
@@ -174,35 +106,10 @@ export class Panel {
             );
         } else {
             this.#tempGroups = groupSensors(sensors);
-            const hottestCritical = Math.max(
-                ...this.#tempGroups.map((g) => g.critical || TEMP_FALLBACK_CRITICAL)
+            this.#tempCluster = new GaugeCluster(
+                this.#roots.temp,
+                tempClusterOptions(this.#tempGroups)
             );
-            this.#tempCluster = new GaugeCluster(this.#roots.temp, {
-                id: "temp",
-                title: "Temperature",
-                summary: {
-                    label: "Hottest",
-                    unit: "°",
-                    max: hottestCritical,
-                    zones: tempZones(hottestCritical),
-                    aggregate: "max",
-                    format: round,
-                },
-                members: this.#tempGroups.map((group) => {
-                    const critical = group.critical || TEMP_FALLBACK_CRITICAL;
-                    const label = group.display;
-                    return {
-                        label:
-                            label.length > MAX_LABEL_CHARS
-                                ? `${label.slice(0, MAX_LABEL_CHARS - 1)}…`
-                                : label,
-                        unit: "°",
-                        max: critical,
-                        zones: tempZones(critical),
-                        format: round,
-                    };
-                }),
-            });
         }
 
         const ramMax = Math.round(data.init_ram_total / 1000);
@@ -216,6 +123,7 @@ export class Panel {
 
         this.#netGauges = this.#buildNetGauges();
 
+        this.#diskTempWarnings = data.disks_temp_warning ?? [];
         const diskMembers = data.disks_space.map((space, i) => ({
             label: `Disk ${i}`,
             unit: "GB",
@@ -270,6 +178,7 @@ export class Panel {
 
         this.#ramGauge.set(data.ram_used / 1000);
         this.#storageCluster.setValues(data.disks_used_space.map((used) => used / 1000));
+        this.#applyDiskTemps(data.disks_temperatures);
 
         const received = this.#netTesting ? NET_TEST_KBPS : data.network_received;
         const transmitted = this.#netTesting ? NET_TEST_KBPS : data.network_transmitted;
@@ -288,6 +197,7 @@ export class Panel {
     }
 
     zero() {
+        this.#lastDiskTemps = null;
         this.#clusters().forEach((c) => c.zero());
         this.#gauges().forEach((g) => g.set(0));
     }
@@ -299,6 +209,18 @@ export class Panel {
     destroy() {
         this.#teardown();
         this.#topologyKey = null;
+    }
+
+    /** Drive temperatures change every 30 s but arrive with every stats frame. */
+    #applyDiskTemps(temps) {
+        if (!Array.isArray(temps) || sameTemps(temps, this.#lastDiskTemps)) {
+            return;
+        }
+        this.#lastDiskTemps = temps;
+        const warnings = this.#diskTempWarnings;
+        const readings = temps.map((celsius, i) => driveReading(celsius, warnings[i]));
+        const summary = readings.length === 1 ? readings[0] : summarizeDriveTemps(temps, warnings);
+        this.#storageCluster.setAuxReadings(readings, summary);
     }
 
     #clusters() {
@@ -367,5 +289,7 @@ export class Panel {
         this.#netGauges = [];
         this.#tempGroups = [];
         this.#cpuDistribution = [];
+        this.#diskTempWarnings = [];
+        this.#lastDiskTemps = null;
     }
 }

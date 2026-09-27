@@ -68,6 +68,26 @@ The engine stops cleanly on `SIGINT` and `SIGTERM`, closing open browser connect
 
 Note: the set of disks and temperature sensors is detected once when the engine starts. If you attach a new drive, restart the engine to have it appear on the panel.
 
+### Drive temperatures
+
+Each storage gauge shows its drive's temperature above the needle hub, refreshed every 30 seconds. When there are several disks, the summary gauge shows the average, or the hottest drive that is over its limit. The number turns red at a threshold that depends on the drive type:
+
+| Drive | Red from |
+| --- | --- |
+| Spinning disk (HDD) | 55 °C |
+| NVMe / SSD reporting its own limit | That limit (NVMe WCTEMP) minus 5 °C |
+| SSD without a reported limit | 70 °C |
+
+A disk on LVM, LUKS or software RAID shows the hottest drive beneath it, against the strictest threshold among them.
+
+- Linux only. Temperatures are read from the kernel's hwmon sensors, which needs no root. macOS and Windows show no drive temperature.
+- NVMe drives work out of the box on kernel 5.5 or newer.
+- SATA drives need the `drivetemp` kernel module: `sudo modprobe drivetemp`, and to load it on boot `echo drivetemp | sudo tee /etc/modules-load.d/drivetemp.conf`. The engine logs a hint at startup for every SATA drive without a sensor.
+- Reading a SATA drive's temperature sends it a SMART command, which on some HDDs resets the spin-down timer. Drives are only read while a panel is open, so disks can still spin down when nobody is watching.
+- ZFS datasets and network shares have no single drive behind them and show no temperature.
+
+Temperature section gauges turn their reading red at 90 °C, or earlier for a sensor whose critical value is low (at 85 % of it, where its red zone starts). The summary turns red whenever any sensor does.
+
 ## Instruction manual:
 
 ### Start logging process
@@ -112,5 +132,5 @@ From `front_panel/`:
 - `npm run dev` serves the page with automatic restarts of the host (run the engine separately with `npm run launch:none` plus `cargo run` in `engine/`, or use `npm run launch`).
 - `npm run build:dev` rebuilds the bundle on every change; `npm run build` produces the production bundle in `dist/`.
 - `npm run check` runs ESLint, Prettier and the Vitest suite; CI runs the same plus `npm audit` on runtime dependencies.
-- Development builds accept `?ws=ws://host:8999` to connect straight to a remote engine, and `?mock_temps=1|none` / `?mock_disks=N` to fake sensors. Neither exists in production builds.
+- Development builds accept `?ws=ws://host:8999` to connect straight to a remote engine, and `?mock_temps=1|none` / `?mock_disks=N` to fake sensors (mocked disks include drive temperatures). Neither exists in production builds.
 - Coding rules live in `engine/code_rules.md` and `front_panel/code_rules.md`.

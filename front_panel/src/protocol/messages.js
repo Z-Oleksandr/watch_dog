@@ -62,6 +62,7 @@ const isNumber = (v) => typeof v === "number" && Number.isFinite(v);
 const isString = (v) => typeof v === "string";
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isNumberArray = (v) => Array.isArray(v) && v.every(isNumber);
+const isNullableNumberArray = (v) => Array.isArray(v) && v.every((n) => n === null || isNumber(n));
 const isStringMap = (v) => isObject(v) && Object.values(v).every(isString);
 const isSeries = (v) =>
     Array.isArray(v) && v.every((p) => isObject(p) && isString(p.time_stamp) && isNumber(p.value));
@@ -72,6 +73,11 @@ function invalid(reason) {
 
 function valid(frame) {
     return { ok: true, frame };
+}
+
+/** An optional per-disk °C array: one number or null for every disk. */
+function isPerDisk(values, disks) {
+    return isNullableNumberArray(values) && values.length === disks.length;
 }
 
 function validateTopology(f) {
@@ -89,6 +95,9 @@ function validateTopology(f) {
             return invalid("temp_sensors[].critical");
         }
     }
+    if (f.disks_temp_warning !== undefined && !isPerDisk(f.disks_temp_warning, f.disks_space)) {
+        return invalid("disks_temp_warning");
+    }
     return valid(f);
 }
 
@@ -101,6 +110,12 @@ function validateStats(f) {
     if (!isNumber(f.uptime)) return invalid("uptime");
     if (f.temperatures !== undefined && !isNumberArray(f.temperatures))
         return invalid("temperatures");
+    if (
+        f.disks_temperatures !== undefined &&
+        !isPerDisk(f.disks_temperatures, f.disks_used_space)
+    ) {
+        return invalid("disks_temperatures");
+    }
     return valid(f);
 }
 

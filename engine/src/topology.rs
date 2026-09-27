@@ -8,7 +8,8 @@ use sysinfo::{
     Components, CpuRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind, System,
 };
 
-use crate::helpers::is_not_pidor;
+use crate::disk_temps::{self, DiskTempRegistry};
+use crate::helpers::{clean_disk_name, is_monitored_disk};
 use crate::temperatures::{init_temp_sensors, TempSensor, TempSensorRegistry};
 
 /// Static description of the machine, sent to every client as the first
@@ -22,6 +23,11 @@ pub struct SystemData {
     disks_space: Vec<u64>,
     init_ram_total: u64,
     temp_sensors: Vec<TempSensor>,
+    /// Per disk warning threshold in °C, positional with `disks_space`;
+    /// `null` for a disk without a temperature sensor. Omitted when no disk
+    /// has one.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    disks_temp_warning: Vec<Option<f32>>,
 }
 
 /// The machine description plus everything the sampler needs to keep producing
@@ -31,6 +37,7 @@ pub struct Topology {
     /// per-tick disk list down to the same set.
     pub disk_names: HashSet<String>,
     pub temp_registry: TempSensorRegistry,
+    pub disk_temp_registry: DiskTempRegistry,
     /// `data_type` 0 payload, serialized once and shared by every connection.
     pub system_data_json: Arc<str>,
 }
@@ -61,6 +68,8 @@ impl fmt::Display for TopologyError {
 }
 
 /// Enumerates CPUs, memory, disks and temperature sensors exactly once.
+///
+/// Performs blocking sysfs and procfs reads.
 pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
     let system = System::new_with_specifics(
         RefreshKind::new()
@@ -74,10 +83,12 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
 
     let mut disk_names: HashSet<String> = HashSet::new();
     let mut disks_space: Vec<u64> = Vec::new();
+    let mut disk_devices: Vec<String> = Vec::new();
     for disk in disks.list() {
         // For linux we need to filter non-physical drives
-        if is_not_pidor(disk.name(), &mut disk_names, disk.mount_point()) {
+        if is_monitored_disk(disk.name(), &mut disk_names, disk.mount_point()) {
             disks_space.push(disk.total_space() / 1_000_000_000);
+            disk_devices.push(clean_disk_name(disk.name()).unwrap_or_default());
         }
     }
     let num_disks = disks_space.len() as u32;
@@ -86,6 +97,7 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
     if temp_registry.sensors.is_empty() {
         warn!("No temperature sensors available on this platform; reporting none");
     }
+    let disk_temp_registry = disk_temps::probe(&disk_devices);
 
     let system_data = SystemData {
         data_type: 0,
@@ -94,6 +106,7 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
         disks_space,
         init_ram_total: system.total_memory() / 1_000_000,
         temp_sensors: temp_registry.sensors.clone(),
+        disks_temp_warning: disk_temp_registry.warnings.clone(),
     };
 
     let system_data_json = match serde_json::to_string(&system_data) {
@@ -113,6 +126,7 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
     let topology = Topology {
         disk_names,
         temp_registry,
+        disk_temp_registry,
         system_data_json: Arc::from(system_data_json.as_str()),
     };
 

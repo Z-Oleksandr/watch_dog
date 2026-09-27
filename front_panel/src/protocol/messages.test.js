@@ -91,6 +91,32 @@ describe("validateFrame", () => {
         expect(validateFrame({ ...stats, uptime: "soon" })).toMatchObject({ reason: "uptime" });
     });
 
+    it("accepts_per_disk_temperatures_with_nulls", () => {
+        expect(validateFrame({ ...stats, disks_temperatures: [41.5, null] }).ok).toBe(true);
+    });
+
+    it("rejects_disk_temperatures_whose_length_differs_from_the_disks", () => {
+        expect(validateFrame({ ...stats, disks_temperatures: [41.5] })).toMatchObject({
+            reason: "disks_temperatures",
+        });
+    });
+
+    it("rejects_non_numeric_disk_temperatures", () => {
+        expect(validateFrame({ ...stats, disks_temperatures: [41.5, "hot"] })).toMatchObject({
+            reason: "disks_temperatures",
+        });
+    });
+
+    it("accepts_per_disk_temperature_warnings_in_the_topology", () => {
+        expect(validateFrame({ ...topology, disks_temp_warning: [55, null] }).ok).toBe(true);
+    });
+
+    it("rejects_temperature_warnings_whose_length_differs_from_the_disks", () => {
+        expect(validateFrame({ ...topology, disks_temp_warning: [55, 70, 70] })).toMatchObject({
+            reason: "disks_temp_warning",
+        });
+    });
+
     it("validates_system_info_as_flat_primitives", () => {
         expect(validateFrame({ data_type: 2, host_name: "srv", uptime: 3 }).ok).toBe(true);
         expect(validateFrame({ data_type: 2, nested: {} })).toMatchObject({
