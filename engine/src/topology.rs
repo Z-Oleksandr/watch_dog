@@ -8,7 +8,7 @@ use sysinfo::{
     Components, CpuRefreshKind, Disks, MemoryRefreshKind, Networks, RefreshKind, System,
 };
 
-use crate::disk_temps::{self, DiskTempRegistry};
+use crate::disk_temps::{self, DiskTempRegistry, MonitoredDisk};
 use crate::helpers::{clean_disk_name, is_monitored_disk};
 use crate::temperatures::{init_temp_sensors, TempSensor, TempSensorRegistry};
 
@@ -83,12 +83,15 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
 
     let mut disk_names: HashSet<String> = HashSet::new();
     let mut disks_space: Vec<u64> = Vec::new();
-    let mut disk_devices: Vec<String> = Vec::new();
+    let mut monitored_disks: Vec<MonitoredDisk> = Vec::new();
     for disk in disks.list() {
         // For linux we need to filter non-physical drives
         if is_monitored_disk(disk.name(), &mut disk_names, disk.mount_point()) {
             disks_space.push(disk.total_space() / 1_000_000_000);
-            disk_devices.push(clean_disk_name(disk.name()).unwrap_or_default());
+            monitored_disks.push(MonitoredDisk {
+                device: clean_disk_name(disk.name()).unwrap_or_default(),
+                mount_point: disk.mount_point().to_path_buf(),
+            });
         }
     }
     let num_disks = disks_space.len() as u32;
@@ -97,7 +100,7 @@ pub fn probe() -> Result<(Topology, HardwareHandles), TopologyError> {
     if temp_registry.sensors.is_empty() {
         warn!("No temperature sensors available on this platform; reporting none");
     }
-    let disk_temp_registry = disk_temps::probe(&disk_devices);
+    let disk_temp_registry = disk_temps::probe(&monitored_disks, &temp_registry.sensors);
 
     let system_data = SystemData {
         data_type: 0,

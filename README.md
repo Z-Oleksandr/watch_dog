@@ -80,7 +80,9 @@ Each storage gauge shows its drive's temperature above the needle hub, refreshed
 
 A disk on LVM, LUKS or software RAID shows the hottest drive beneath it, against the strictest threshold among them.
 
-- Linux only. Temperatures are read from the kernel's hwmon sensors, which needs no root. macOS and Windows show no drive temperature.
+- Linux: temperatures are read from the kernel's hwmon sensors. The engine needs no root for this.
+- macOS (Apple silicon): the internal SSD's temperature (the `NAND` sensor, also shown in the Temperature section as "SSD") is shown on the system disk. External drives show no temperature.
+- Windows: not supported yet.
 - NVMe drives work out of the box on kernel 5.5 or newer.
 - SATA drives need the `drivetemp` kernel module: `sudo modprobe drivetemp`, and to load it on boot `echo drivetemp | sudo tee /etc/modules-load.d/drivetemp.conf`. The engine logs a hint at startup for every SATA drive without a sensor.
 - Reading a SATA drive's temperature sends it a SMART command, which on some HDDs resets the spin-down timer. Drives are only read while a panel is open, so disks can still spin down when nobody is watching.

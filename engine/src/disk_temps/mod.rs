@@ -1,14 +1,14 @@
 //! Drive temperatures for the monitored disks.
 //!
-//! Sensors are discovered once at startup (see `discovery`) and afterwards read
-//! as plain hwmon files, so reading needs no privileges. Linux only: other
-//! platforms offer no unprivileged way to query a drive, and report none.
+//! Sources are discovered once at startup and read without privileges:
+//! - Linux: each drive's hwmon sensor, found by walking sysfs (`sysfs`).
+//! - macOS: the internal SSD's NAND sensor, which the component temperature
+//!   reads already cover, attributed to the system volume (`apple`).
+//! - Elsewhere: none.
 
-// Discovery only runs on Linux, but it still compiles and is tested on every
-// platform, where its items would otherwise be flagged as unused.
-#![cfg_attr(not(target_os = "linux"), allow(dead_code))]
-
+mod apple;
 mod discovery;
+mod sysfs;
 
 use std::collections::HashMap;
 use std::fs;
@@ -17,24 +17,35 @@ use std::path::{Path, PathBuf};
 use log::{debug, info};
 
 use crate::config;
-use crate::temperatures::is_plausible_temperature;
-use discovery::{kernel_name, physical_drives, probe_drive, DriveKind, DriveProbe, TEMP_MAX};
+use crate::temperatures::{is_plausible_temperature, TempSensor};
+use discovery::DriveKind;
 
-/// Range in which a drive-reported limit is believed, in °C. Drives with an
-/// unset WCTEMP report 0 or a wrapped Kelvin value.
-const MIN_REPORTED_LIMIT_C: f32 = 50.0;
-const MAX_REPORTED_LIMIT_C: f32 = 110.0;
+/// A disk in the monitored set, in `disks_space` order.
+pub struct MonitoredDisk {
+    /// Device name as sysinfo reports it (`/dev/nvme0n1p2`, `Macintosh HD`).
+    pub device: String,
+    pub mount_point: PathBuf,
+}
+
+/// Where one temperature reading comes from.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum TempSource {
+    /// A hwmon `temp1_input` file, read on the disk temperature cadence.
+    Hwmon(PathBuf),
+    /// An entry of the component `temperatures`, already read by the sampler.
+    Sensor(usize),
+}
 
 /// Where every monitored disk's temperature comes from.
 ///
-/// Positional like the rest of the topology: entry *i* of `disk_inputs` and
+/// Positional like the rest of the topology: entry *i* of `disk_sources` and
 /// `warnings` belongs to entry *i* of `disks_space`.
 pub struct DiskTempRegistry {
-    /// Distinct sensor files; partitions of one drive share an entry, so each
-    /// drive is queried once per read.
-    inputs: Vec<PathBuf>,
-    /// Per disk, indices into `inputs`; empty when the disk has no sensor.
-    disk_inputs: Vec<Vec<usize>>,
+    /// Distinct sources; partitions of one drive share an entry, so each drive
+    /// is queried once per read.
+    sources: Vec<TempSource>,
+    /// Per disk, indices into `sources`; empty when the disk has no sensor.
+    disk_sources: Vec<Vec<usize>>,
     /// Per disk warning threshold in °C, `None` when the disk has no sensor.
     /// Empty when no disk has a sensor, so the field is left off the wire.
     pub warnings: Vec<Option<f32>>,
@@ -43,111 +54,87 @@ pub struct DiskTempRegistry {
 impl DiskTempRegistry {
     fn unavailable() -> Self {
         DiskTempRegistry {
-            inputs: Vec::new(),
-            disk_inputs: Vec::new(),
+            sources: Vec::new(),
+            disk_sources: Vec::new(),
             warnings: Vec::new(),
         }
     }
 }
 
-/// Where the kernel publishes block devices; `None` without sysfs.
-fn block_class_dir() -> Option<&'static Path> {
-    #[cfg(target_os = "linux")]
-    {
-        Some(Path::new("/sys/class/block"))
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        None
-    }
+/// Assembles a registry disk by disk, deduplicating shared sources.
+struct RegistryBuilder {
+    sources: Vec<TempSource>,
+    source_index: HashMap<TempSource, usize>,
+    disk_sources: Vec<Vec<usize>>,
+    warnings: Vec<Option<f32>>,
 }
 
-/// Discovers the sensors of the monitored disks, given their device names in
-/// topology order. Performs blocking sysfs reads.
-pub fn probe(disk_names: &[String]) -> DiskTempRegistry {
-    let block_dir = match block_class_dir() {
-        Some(dir) => dir,
-        None => {
-            info!("Drive temperatures are only available on Linux");
+impl RegistryBuilder {
+    fn with_capacity(disks: usize) -> Self {
+        RegistryBuilder {
+            sources: Vec::new(),
+            source_index: HashMap::new(),
+            disk_sources: Vec::with_capacity(disks),
+            warnings: Vec::with_capacity(disks),
+        }
+    }
+
+    /// Adds the next disk. A disk without sources gets no warning.
+    fn push_disk(&mut self, sources: Vec<TempSource>, warning: Option<f32>) {
+        let mut indices: Vec<usize> = Vec::with_capacity(sources.len());
+        for source in sources {
+            let index = match self.source_index.get(&source) {
+                Some(&index) => index,
+                None => {
+                    self.sources.push(source.clone());
+                    let index = self.sources.len() - 1;
+                    self.source_index.insert(source, index);
+                    index
+                }
+            };
+            if !indices.contains(&index) {
+                indices.push(index);
+            }
+        }
+        let warning = if indices.is_empty() { None } else { warning };
+        self.disk_sources.push(indices);
+        self.warnings.push(warning);
+    }
+
+    fn finish(self) -> DiskTempRegistry {
+        let with_sensor = self.warnings.iter().filter(|w| w.is_some()).count();
+        info!(
+            "Drive temperature sensors found for {} of {} disk(s)",
+            with_sensor,
+            self.warnings.len()
+        );
+        if self.sources.is_empty() {
             return DiskTempRegistry::unavailable();
         }
-    };
-    let kernel_names: Vec<Option<String>> = disk_names
-        .iter()
-        .map(|name| kernel_name(Path::new(name)))
-        .collect();
-    build_registry(block_dir, &kernel_names)
-}
-
-fn build_registry(block_dir: &Path, kernel_names: &[Option<String>]) -> DiskTempRegistry {
-    let mut inputs: Vec<PathBuf> = Vec::new();
-    let mut input_index: HashMap<PathBuf, usize> = HashMap::new();
-    let mut drives: HashMap<String, Option<(DriveProbe, f32)>> = HashMap::new();
-    let mut disk_inputs = Vec::with_capacity(kernel_names.len());
-    let mut warnings = Vec::with_capacity(kernel_names.len());
-
-    for name in kernel_names {
-        let mut indices: Vec<usize> = Vec::new();
-        let mut warning: Option<f32> = None;
-
-        let resolved = match name {
-            Some(name) => physical_drives(block_dir, name),
-            None => Vec::new(),
-        };
-        for drive in resolved {
-            let probed = drives.entry(drive).or_insert_with_key(|drive| {
-                probe_drive(block_dir, drive).map(|probe| {
-                    let warning = warning_threshold(probe.kind, reported_limit(&probe));
-                    (probe, warning)
-                })
-            });
-            let (probe, drive_warning) = match probed {
-                Some(probed) => probed,
-                None => continue,
-            };
-            for input in &probe.inputs {
-                let index = *input_index.entry(input.clone()).or_insert_with(|| {
-                    inputs.push(input.clone());
-                    inputs.len() - 1
-                });
-                if !indices.contains(&index) {
-                    indices.push(index);
-                }
-            }
-            // A volume spanning several drives warns at its most sensitive one.
-            let strictest = warning.map_or(*drive_warning, |w| w.min(*drive_warning));
-            warning = Some(strictest);
+        DiskTempRegistry {
+            sources: self.sources,
+            disk_sources: self.disk_sources,
+            warnings: self.warnings,
         }
-
-        disk_inputs.push(indices);
-        warnings.push(warning);
-    }
-
-    let with_sensor = warnings.iter().filter(|w| w.is_some()).count();
-    info!(
-        "Drive temperature sensors found for {} of {} disk(s)",
-        with_sensor,
-        kernel_names.len()
-    );
-    if inputs.is_empty() {
-        return DiskTempRegistry::unavailable();
-    }
-
-    DiskTempRegistry {
-        inputs,
-        disk_inputs,
-        warnings,
     }
 }
 
-/// The lowest believable limit the drive reports across its controllers.
-fn reported_limit(probe: &DriveProbe) -> Option<f32> {
-    probe
-        .hwmon_dirs
-        .iter()
-        .filter_map(|dir| read_millidegrees(&dir.join(TEMP_MAX)))
-        .filter(|limit| (MIN_REPORTED_LIMIT_C..=MAX_REPORTED_LIMIT_C).contains(limit))
-        .reduce(f32::min)
+/// Where the Linux kernel publishes block devices.
+const SYSFS_BLOCK_DIR: &str = "/sys/class/block";
+
+/// Discovers the temperature source of every monitored disk. `sensors` are
+/// the component sensors in `temp_sensors` order. Performs blocking reads.
+pub fn probe(disks: &[MonitoredDisk], sensors: &[TempSensor]) -> DiskTempRegistry {
+    // cfg! rather than #[cfg] keeps every platform's discovery compiled and
+    // tested everywhere, while only the host's runs.
+    if cfg!(target_os = "linux") {
+        sysfs::build(Path::new(SYSFS_BLOCK_DIR), disks)
+    } else if cfg!(target_os = "macos") {
+        apple::build(disks, sensors)
+    } else {
+        info!("Drive temperatures are not available on this platform");
+        DiskTempRegistry::unavailable()
+    }
 }
 
 /// Spinning disks use a fixed threshold: their self-reported limit is the edge
@@ -163,25 +150,39 @@ fn warning_threshold(kind: DriveKind, reported_limit: Option<f32>) -> f32 {
     }
 }
 
+/// Range in which a drive-reported limit is believed, in °C. Drives with an
+/// unset WCTEMP report 0 or a wrapped Kelvin value.
+const MIN_REPORTED_LIMIT_C: f32 = 50.0;
+const MAX_REPORTED_LIMIT_C: f32 = 110.0;
+
+fn is_believable_limit(limit: f32) -> bool {
+    (MIN_REPORTED_LIMIT_C..=MAX_REPORTED_LIMIT_C).contains(&limit)
+}
+
 /// Reads every monitored disk's temperature in °C, `None` where the disk has
 /// no sensor or the read failed. A disk spanning several drives reports the
 /// hottest. Empty when no disk has a sensor.
 ///
-/// Every sensor read is a command to the drive (~12 ms for NVMe), so this must
-/// run on the blocking pool and on the slow `DISK_TEMP_INTERVAL` cadence.
-pub fn read_disk_temperatures(registry: &DiskTempRegistry) -> Vec<Option<f32>> {
-    if registry.inputs.is_empty() {
+/// `sensor_temperatures` are the latest component readings, positional with
+/// `temp_sensors`. A hwmon read is a command to the drive (~12 ms for NVMe),
+/// so this must run on the blocking pool and on the `DISK_TEMP_INTERVAL`
+/// cadence.
+pub fn read_disk_temperatures(
+    registry: &DiskTempRegistry,
+    sensor_temperatures: &[f32],
+) -> Vec<Option<f32>> {
+    if registry.sources.is_empty() {
         return Vec::new();
     }
 
     let readings: Vec<Option<f32>> = registry
-        .inputs
+        .sources
         .iter()
-        .map(|input| read_temperature(input))
+        .map(|source| read_source(source, sensor_temperatures))
         .collect();
 
     registry
-        .disk_inputs
+        .disk_sources
         .iter()
         .map(|indices| {
             indices
@@ -192,15 +193,20 @@ pub fn read_disk_temperatures(registry: &DiskTempRegistry) -> Vec<Option<f32>> {
         .collect()
 }
 
-fn read_temperature(input: &Path) -> Option<f32> {
-    let temperature = read_millidegrees(input)?;
+fn read_source(source: &TempSource, sensor_temperatures: &[f32]) -> Option<f32> {
+    let (temperature, origin) = match source {
+        TempSource::Hwmon(path) => (read_millidegrees(path)?, path.display().to_string()),
+        TempSource::Sensor(index) => (
+            sensor_temperatures.get(*index).copied()?,
+            format!("component sensor {}", index),
+        ),
+    };
     if is_plausible_temperature(temperature) {
         Some(temperature)
     } else {
         debug!(
             "Ignoring implausible drive temperature {} from {}",
-            temperature,
-            input.display()
+            temperature, origin
         );
         None
     }
@@ -230,11 +236,10 @@ fn parse_millidegrees(raw: &str) -> Option<f32> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::discovery::tests::FakeBlockDir;
+pub(crate) mod tests {
     use super::*;
 
-    fn assert_close(actual: Option<f32>, expected: f32) {
+    pub fn assert_close(actual: Option<f32>, expected: f32) {
         let actual = actual.expect("a value was expected");
         assert!(
             (actual - expected).abs() < 1e-3,
@@ -242,10 +247,6 @@ mod tests {
             actual,
             expected
         );
-    }
-
-    fn names(names: &[&str]) -> Vec<Option<String>> {
-        names.iter().map(|name| Some(name.to_string())).collect()
     }
 
     #[test]
@@ -286,98 +287,56 @@ mod tests {
     }
 
     #[test]
-    fn an_implausible_reported_limit_is_ignored() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "40000", "0");
-        let registry = build_registry(&tree.root, &names(&["nvme0n1"]));
+    fn believes_only_plausible_limits() {
+        assert!(is_believable_limit(84.85));
+        assert!(!is_believable_limit(0.0));
+        assert!(!is_believable_limit(65261.85));
+    }
+
+    #[test]
+    fn shared_sources_are_read_once() {
+        let mut builder = RegistryBuilder::with_capacity(2);
+        builder.push_disk(vec![TempSource::Sensor(3)], Some(70.0));
+        builder.push_disk(vec![TempSource::Sensor(3)], Some(70.0));
+        let registry = builder.finish();
+        assert_eq!(registry.sources.len(), 1);
+        assert_eq!(registry.disk_sources, vec![vec![0], vec![0]]);
+    }
+
+    #[test]
+    fn a_disk_without_sources_has_no_warning() {
+        let mut builder = RegistryBuilder::with_capacity(2);
+        builder.push_disk(Vec::new(), Some(70.0));
+        builder.push_disk(vec![TempSource::Sensor(0)], Some(70.0));
+        assert_eq!(builder.finish().warnings, vec![None, Some(70.0)]);
+    }
+
+    #[test]
+    fn no_sources_at_all_leaves_the_registry_empty() {
+        let mut builder = RegistryBuilder::with_capacity(1);
+        builder.push_disk(Vec::new(), None);
+        let registry = builder.finish();
+        assert!(registry.warnings.is_empty());
+        assert!(read_disk_temperatures(&registry, &[]).is_empty());
+    }
+
+    #[test]
+    fn sensor_sources_read_the_component_temperatures() {
+        let mut builder = RegistryBuilder::with_capacity(1);
+        builder.push_disk(vec![TempSource::Sensor(1)], Some(70.0));
+        let registry = builder.finish();
         assert_eq!(
-            registry.warnings,
-            vec![Some(config::SSD_TEMP_WARNING_FALLBACK_C)]
+            read_disk_temperatures(&registry, &[50.0, 38.5]),
+            vec![Some(38.5)]
         );
     }
 
     #[test]
-    fn an_nvme_partition_reads_its_drive() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "41850\n", "84850\n");
-        tree.partition("nvme0n1", "nvme0n1p2");
-        let registry = build_registry(&tree.root, &names(&["nvme0n1p2"]));
-        assert_close(registry.warnings[0], 84.85 - config::DRIVE_LIMIT_MARGIN_C);
-        assert_close(read_disk_temperatures(&registry)[0], 41.85);
-    }
-
-    #[test]
-    fn a_sata_hdd_uses_the_hdd_threshold() {
-        let tree = FakeBlockDir::new();
-        tree.sata("sda", "38000", true);
-        tree.partition("sda", "sda1");
-        let registry = build_registry(&tree.root, &names(&["sda1"]));
-        assert_eq!(registry.warnings, vec![Some(config::HDD_TEMP_WARNING_C)]);
-    }
-
-    #[test]
-    fn partitions_of_one_drive_share_one_read() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "41000", "84000");
-        tree.partition("nvme0n1", "nvme0n1p1");
-        tree.partition("nvme0n1", "nvme0n1p2");
-        let registry = build_registry(&tree.root, &names(&["nvme0n1p1", "nvme0n1p2"]));
-        assert_eq!(registry.inputs.len(), 1);
-        assert_eq!(registry.disk_inputs, vec![vec![0], vec![0]]);
-    }
-
-    #[test]
-    fn a_stacked_volume_reports_its_hottest_drive_and_strictest_threshold() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "40000", "84000");
-        tree.sata("sda", "50000", true);
-        tree.partition("nvme0n1", "nvme0n1p1");
-        tree.partition("sda", "sda1");
-        tree.dir("dm-0/slaves/nvme0n1p1");
-        tree.dir("dm-0/slaves/sda1");
-        let registry = build_registry(&tree.root, &names(&["dm-0"]));
-        assert_eq!(registry.warnings, vec![Some(config::HDD_TEMP_WARNING_C)]);
-        assert_close(read_disk_temperatures(&registry)[0], 50.0);
-    }
-
-    #[test]
-    fn a_disk_without_a_sensor_stays_aligned() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "41000", "84000");
-        tree.dir("sdb/device");
-        let kernel_names = vec![None, Some("sdb".to_string()), Some("nvme0n1".to_string())];
-        let registry = build_registry(&tree.root, &kernel_names);
-        assert_eq!(registry.warnings.len(), 3);
-        let temperatures = read_disk_temperatures(&registry);
-        assert_eq!(temperatures.len(), 3);
-        assert_eq!(temperatures[0], None);
-        assert_eq!(temperatures[1], None);
-        assert_close(temperatures[2], 41.0);
-    }
-
-    #[test]
-    fn no_sensors_at_all_reports_nothing() {
-        let tree = FakeBlockDir::new();
-        tree.dir("sdb/device");
-        let registry = build_registry(&tree.root, &names(&["sdb", "tank"]));
-        assert!(registry.warnings.is_empty());
-        assert!(read_disk_temperatures(&registry).is_empty());
-    }
-
-    #[test]
-    fn a_failed_read_reports_none() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "41000", "84000");
-        let registry = build_registry(&tree.root, &names(&["nvme0n1"]));
-        fs::remove_dir_all(tree.root.join("nvme0n1")).expect("tree is removable");
-        assert_eq!(read_disk_temperatures(&registry), vec![None]);
-    }
-
-    #[test]
-    fn an_implausible_reading_reports_none() {
-        let tree = FakeBlockDir::new();
-        tree.nvme("nvme0n1", "0", "84000");
-        let registry = build_registry(&tree.root, &names(&["nvme0n1"]));
-        assert_eq!(read_disk_temperatures(&registry), vec![None]);
+    fn a_missing_or_implausible_sensor_reading_reports_none() {
+        let mut builder = RegistryBuilder::with_capacity(2);
+        builder.push_disk(vec![TempSource::Sensor(5)], Some(70.0));
+        builder.push_disk(vec![TempSource::Sensor(0)], Some(70.0));
+        let registry = builder.finish();
+        assert_eq!(read_disk_temperatures(&registry, &[0.0]), vec![None, None]);
     }
 }

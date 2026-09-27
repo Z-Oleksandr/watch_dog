@@ -94,7 +94,7 @@ src/
 ├── system_stats.rs      ← Per-tick collection (blocking; called only from spawn_blocking)
 ├── system_info.rs       ← Static host description, probed once
 ├── temperatures.rs      ← Sensor discovery, filtering and reading
-├── disk_temps/          ← Drive temperatures: sysfs discovery at startup, hwmon reads, per-drive thresholds
+├── disk_temps/          ← Drive temperatures and per-drive thresholds: Linux hwmon via sysfs discovery, macOS internal SSD sensor
 ├── helpers.rs           ← Small pure helpers (disk filtering)
 ├── ws/
 │   ├── mod.rs           ← AppContext, IncomingMessage

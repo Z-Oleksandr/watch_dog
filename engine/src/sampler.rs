@@ -140,7 +140,7 @@ async fn run(
                 previous_temperatures
             };
             let disk_temperatures = if read_disk_temps {
-                read_disk_temperatures(&topology_ref.disk_temp_registry)
+                read_disk_temperatures(&topology_ref.disk_temp_registry, &temperatures)
             } else {
                 previous_disk_temperatures
             };
