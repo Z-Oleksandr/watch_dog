@@ -22,6 +22,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test version computation
+        run: ./scripts/test_compute_version.sh
+
       - name: Compute version from conventional commits
         id: semver
         run: ./scripts/compute_version.sh
