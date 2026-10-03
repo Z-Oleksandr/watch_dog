@@ -4,6 +4,9 @@
 # Usage: scripts/test_compute_version.sh
 set -euo pipefail
 
+# GitHub runners set this; cases opt in to it explicitly so nothing leaks into the job.
+unset GITHUB_OUTPUT
+
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/compute_version.sh"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
