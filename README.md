@@ -18,6 +18,8 @@ The main idea is to be able to see the state of the server's system using any de
 5. Execute `npm run watch_dog` (works on Linux, Windows and macOS; the older `watch_dog_win` / `watch_dog_mac` names still work as aliases)
 6. In browser open `http://localhost:9000`
 
+P.S.: for drive temps see [Drive temperatures](#drive-temperatures).
+
 ### Steps (from source):
 
 1. Clone the project.
@@ -27,6 +29,8 @@ The main idea is to be able to see the state of the server's system using any de
 5. Execute `npm run build`
 6. Execute `npm run watch_dog` (or `npm run launch` to use the engine you built in `engine/target/release`)
 7. In browser open `http://localhost:9000`
+
+P.S.: for drive temps see [Drive temperatures](#drive-temperatures).
 
 And that is basically it, **however** that is more of a test run. In order to fulfill the main purpose of the app it has to run in the background on a server (as an example we will take a server running a linux OS) and be accessible at any time from any other device in the local network (it could also be set up to only be accessible from one specific device, but we will save that for later).
 
