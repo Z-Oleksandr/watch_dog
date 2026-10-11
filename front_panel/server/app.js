@@ -3,9 +3,8 @@
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
-const { createProxyMiddleware } = require("http-proxy-middleware");
-
 const { log } = require("./log");
+const { createWsProxy } = require("./proxy");
 
 /** Webpack emits `name.<contenthash>.ext`; those files never change in place. */
 const HASHED_ASSET = /\.[0-9a-f]{16,}\.(js|css|map)$/i;
@@ -70,9 +69,9 @@ function staticDir(dir) {
 }
 
 /**
- * Builds the Express app and the WebSocket proxy. The proxy's `upgrade`
- * handler must be attached to the HTTP server by the caller so upgrades are
- * routed even before any HTTP request has been proxied.
+ * Builds the Express app and the WebSocket proxy. Express never sees upgrade
+ * requests, so the caller attaches `wsProxy.upgrade` to the HTTP server's
+ * `upgrade` event.
  *
  * @param {import("./config").Config} config
  */
@@ -97,21 +96,7 @@ function createApp(config) {
         res.json({ status: "ok" });
     });
 
-    const wsProxy = createProxyMiddleware({
-        pathFilter: "/ws",
-        target: config.engine.url,
-        ws: true,
-        changeOrigin: false,
-        xfwd: false,
-        logger: proxyLogger(),
-        on: {
-            error: onProxyError,
-            proxyReqWs: (_proxyReq, req) => {
-                log.info("proxy", "websocket upgrade", { from: req.socket.remoteAddress });
-            },
-        },
-    });
-    app.use(wsProxy);
+    const wsProxy = createWsProxy({ path: "/ws", target: config.engine });
 
     app.use(staticDir(config.distDir));
     app.use(staticDir(config.publicDir));
@@ -130,30 +115,6 @@ function createApp(config) {
     });
 
     return { app, wsProxy };
-}
-
-function onProxyError(err, req, resOrSocket) {
-    log.warn("proxy", "engine unreachable", { code: err.code, url: req && req.url });
-    if (!resOrSocket) {
-        return;
-    }
-    if (typeof resOrSocket.writeHead === "function" && !resOrSocket.headersSent) {
-        resOrSocket.writeHead(502, { "Content-Type": "application/json" });
-        resOrSocket.end(JSON.stringify({ error: "Engine unavailable" }));
-        return;
-    }
-    if (typeof resOrSocket.destroy === "function") {
-        resOrSocket.destroy();
-    }
-}
-
-function proxyLogger() {
-    return {
-        info: (...args) => log.debug("proxy", args.map(String).join(" ")),
-        warn: (...args) => log.warn("proxy", args.map(String).join(" ")),
-        // Errors are reported once by onProxyError with structured context.
-        error: (...args) => log.debug("proxy", args.map(String).join(" ")),
-    };
 }
 
 module.exports = { createApp, CSP };
