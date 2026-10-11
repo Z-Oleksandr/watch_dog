@@ -647,10 +647,10 @@ The panel runs on a LAN and has no authentication. The threat model is: any devi
 
 1. `package-lock.json` is committed and CI installs with `npm ci`. Never `npm install` in CI.
 2. `npm audit --omit=dev` runs in CI and fails on `high` or `critical`.
-3. Runtime dependencies are only what the server needs at runtime (`express`, `http-proxy-middleware`). Build tools (`webpack`, `webpack-cli`), the browser libraries bundled into `dist/` (`three`, `chart.js`, `chartjs-plugin-zoom`), and orchestration helpers (`npm-run-all`, `nodemon`) are `devDependencies`. `npm ci --omit=dev` on a release must install the minimum.
+3. Runtime dependencies are only what the server needs at runtime (`express`; the `/ws` proxy in `server/proxy.js` is built on `node:http` and needs no package). Build tools (`webpack`, `webpack-cli`), the browser libraries bundled into `dist/` (`three`, `chart.js`, `chartjs-plugin-zoom`), and orchestration helpers (`npm-run-all`, `nodemon`) are `devDependencies`. `npm ci --omit=dev` on a release must install the minimum.
 4. `ws` is not a direct dependency of this package (the proxy brings its own). Unused dependencies are removed.
 5. Adding a dependency requires: a maintained project, a compatible license (GPL-3.0-or-later project; MIT/BSD/Apache-2.0 deps are fine), and a reason it beats 30 lines of local code.
-6. Major version upgrades of `three`, `chart.js`, `express`, and `http-proxy-middleware` are their own PR with a manual smoke test on the panel.
+6. Major version upgrades of `three`, `chart.js`, and `express` are their own PR with a manual smoke test on the panel.
 
 ---
 
@@ -676,7 +676,7 @@ Configuration is parsed once at startup into a frozen object, validated (port is
 3. **Error middleware**: a final `(err, req, res, next)` handler logs and returns a generic 500. Express's default HTML error page leaks stack traces.
 4. **404 handler** for unknown paths that are not `/` (SPA fallback is not needed: there is one page).
 5. **Static caching**: hashed assets (`main.[contenthash].js`) get `Cache-Control: public, max-age=31536000, immutable`. `index.html` gets `no-cache`.
-6. **Proxy errors** (engine down) are handled by the proxy's `on.error` hook: log at `warn`, return 502 for HTTP, close the upgrade cleanly. The Node process must not crash because the engine restarted.
+6. **Proxy errors** (engine down) are handled in `server/proxy.js`: log at `warn`, answer the upgrade with 502 and close the socket cleanly. The Node process must not crash because the engine restarted.
 7. **Logging** through the same tiny logger used in the browser (structured, leveled), not bare `console.log`. Startup logs the bind address, port, and proxy target once at `info`.
 8. **No business logic.** The server hosts files and proxies a socket. Anything else belongs in the engine.
 
