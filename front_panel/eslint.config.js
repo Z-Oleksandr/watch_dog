@@ -29,7 +29,7 @@ const baseRules = {
 
 module.exports = [
     {
-        ignores: ["dist/**", "node_modules/**", "coverage/**"],
+        ignores: ["dist/**", "dist_demo/**", "node_modules/**", "coverage/**"],
     },
     js.configs.recommended,
     {
@@ -38,7 +38,7 @@ module.exports = [
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: "module",
-            globals: { ...globals.browser, __DEV__: "readonly" },
+            globals: { ...globals.browser, __DEV__: "readonly", __DEMO__: "readonly" },
         },
         settings: {
             "import-x/resolver": { node: { extensions: [".js"] } },
@@ -64,7 +64,12 @@ module.exports = [
         languageOptions: {
             ecmaVersion: 2023,
             sourceType: "module",
-            globals: { ...globals.browser, ...globals.node, __DEV__: "readonly" },
+            globals: {
+                ...globals.browser,
+                ...globals.node,
+                __DEV__: "readonly",
+                __DEMO__: "readonly",
+            },
         },
         rules: { "no-console": "off", "no-unused-vars": "off" },
     },
