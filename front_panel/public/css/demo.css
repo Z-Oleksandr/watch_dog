@@ -1,0 +1,51 @@
+/* Website demo ribbon; only linked by the `build:demo` page. */
+
+:root {
+    --z-demo: 30;
+}
+
+.demo-ribbon {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: var(--z-demo);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: calc(100vw - 24px);
+    padding: 7px 14px;
+    background: var(--charcoal);
+    box-shadow: var(--panel-border);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.demo-ribbon-title {
+    color: var(--cream-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.demo-ribbon-link {
+    color: var(--brass-light);
+    text-decoration: none;
+    border-bottom: 1px solid var(--brass-dark);
+    white-space: nowrap;
+}
+
+.demo-ribbon-link:hover,
+.demo-ribbon-link:focus-visible {
+    color: var(--glow);
+    border-bottom-color: var(--glow);
+}
+
+@media (max-width: 600px) {
+    .demo-ribbon {
+        left: 12px;
+        justify-content: space-between;
+        font-size: 0.7rem;
+    }
+}

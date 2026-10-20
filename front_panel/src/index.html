@@ -4,28 +4,38 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="dark" />
-        <title>Watch Dog</title>
+        <title><%= demo ? "Watch Dog · Live demo" : "Watch Dog" %></title>
         <link
             rel="preload"
-            href="/fonts/deco/JosefinSans-Variable.ttf"
+            href="fonts/deco/JosefinSans-Variable.ttf"
             as="font"
             type="font/ttf"
             crossorigin
         />
         <link
             rel="preload"
-            href="/fonts/deco/Limelight-Regular.ttf"
+            href="fonts/deco/Limelight-Regular.ttf"
             as="font"
             type="font/ttf"
             crossorigin
         />
-        <link rel="stylesheet" href="/css/deco.css" />
-        <link rel="stylesheet" href="/css/control_window_style.css" />
-        <link rel="stylesheet" href="/css/chart_style.css" />
-        <link rel="stylesheet" href="/css/portals.css" />
-        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="stylesheet" href="css/deco.css" />
+        <link rel="stylesheet" href="css/control_window_style.css" />
+        <link rel="stylesheet" href="css/chart_style.css" />
+        <link rel="stylesheet" href="css/portals.css" />
+        <% if (demo) { %>
+        <link rel="stylesheet" href="css/demo.css" />
+        <% } %>
+        <link rel="icon" href="favicon.png" type="image/png" />
     </head>
     <body>
+        <% if (demo) { %>
+        <nav class="demo-ribbon" aria-label="Demo">
+            <span class="demo-ribbon-title">Live demo · simulated engine</span>
+            <a class="demo-ribbon-link" href="<%- sourceUrl %>" rel="noopener noreferrer">Source</a>
+            <a class="demo-ribbon-link" href="<%- returnUrl %>">Return</a>
+        </nav>
+        <% } %>
         <div class="container">
             <aside class="col-left section deco-panel" aria-label="Processor and temperature">
                 <div id="cpu-cluster"></div>

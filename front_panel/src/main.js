@@ -81,9 +81,17 @@ async function main() {
     const controlsRoot = requireElement(".control2");
     const controls = createControls(controlsRoot, display);
 
+    let transportOptions = { url: resolveSocketUrl(window.location) };
+    let demoNotice = null;
+    if (__DEMO__) {
+        const demo = await import("./demo/engine_socket.js");
+        transportOptions = demo.simulatedTransportOptions();
+        demoNotice = demo.DEMO_NOTICE;
+    }
+
     const stores = createStores();
     const streams = new StreamRegistry();
-    const transport = new Transport({ url: resolveSocketUrl(window.location) });
+    const transport = new Transport(transportOptions);
     const portals = new PortalManager({
         onClosed: (channel) => {
             streams.close(channel);
@@ -162,6 +170,7 @@ async function main() {
             if (!boot.hasRun) {
                 boot.run().then(() => {
                     display.writeLine("Display 2 initialized.");
+                    if (demoNotice) display.writeLine(demoNotice);
                     announceConnected();
                 });
             } else {

@@ -78,8 +78,10 @@ front_panel/
 │   ├── render/          ← Pure drawing: Canvas gauges, three.js controls, Chart.js charts
 │   ├── features/        ← User flows that compose the above: logging, docker streaming, chart picker
 │   ├── util/            ← Pure helpers: formatting, math, logger
+│   ├── demo/            ← Simulated engine for the website demo; only in `build:demo`
 │   └── server.js        ← Node/Express: static hosting + WebSocket proxy (separate runtime!)
 ├── dist/                ← Build output. Never committed, never edited.
+├── dist_demo/           ← Website demo build output (`npm run build:demo`). Never committed.
 └── webpack.config.js
 ```
 
@@ -369,6 +371,7 @@ function dispatch(frame) {
 ```
 
 6. **Dev mocks are build-gated.** The `?mock_temps` / `?mock_disks` query parameters are useful in development and must compile out of the production bundle (`if (__DEV__)` via webpack `DefinePlugin`). Production builds do not contain code that fabricates sensor data.
+7. **The website demo is the one exception, and it is its own build.** `npm run build:demo` sets `__DEMO__` and swaps the socket for `demo/engine_socket.js` through the `Transport`'s `WebSocketImpl` option. The simulated engine emits JSON text in the engine's exact wire format, so frames still pass through `parseFrame`, `validateFrame` and the dispatcher; nothing above the transport knows it is a demo. Simulation code lives only in `src/demo/`, is reached only from the `if (__DEMO__)` branch in `main.js`, and every frame it produces is covered by a test that runs it through the validators.
 
 ---
 
@@ -512,6 +515,7 @@ display.writeLine("WebSocket connection established");
 2. Every `setInterval` handle is stored and there is a code path that clears it. An interval with no owner runs until the tab closes.
 3. Every `setTimeout` that touches a component is cancelled in that component's `destroy()`. Use `AbortSignal.timeout()` or store the handle.
 4. Cascading `setTimeout` inside loops (77 timers for a loading bar) is replaced by one rAF loop or one interval with a counter.
+5. The simulated engine in `src/demo/` uses timers to stand in for the engine's own clock (handshake, stream delay, 1 Hz sampler, reply latency). Those timers model the remote side, not panel sequencing; each one is owned and cleared when its socket closes.
 
 ### Async Hygiene
 
@@ -799,7 +803,7 @@ There are currently no frontend tests. New code that fits a category below ships
 10. **All listeners and observers cleaned up** on component destroy.
 11. **Animation loops stop when idle and when the tab is hidden.**
 12. **All buffers bounded** (display, portals, queues).
-13. **Dev mocks compiled out** of the production bundle (`grep mock_temps dist/` returns nothing).
+13. **Dev mocks and the demo simulation compiled out** of the production bundle (`grep mock_temps dist/` and `grep demo://simulated-engine dist/*.js` return nothing; CI checks the latter).
 14. **Bundle within budget**; Chart.js and three.js tree-shaken; no `chart.js/auto`, no `import * as THREE`.
 15. **Theme tokens read from CSS**, no color literals in render modules.
 16. **`prefers-reduced-motion` honored.**
@@ -826,8 +830,10 @@ What remains, ordered by value:
    (or a `<dialog>` command palette) bound to the same `Button` / `ToggleSwitch`
    instances so every flow works from a keyboard.
 2. **End-to-end test in CI.** Flows are verified by a scripted DevTools run
-   against a live engine (see the commit history for the sequence). Turn that
-   into a Playwright test with a mock engine so it runs on every PR.
+   against a live engine (see the commit history for the sequence). The
+   simulated engine in `src/demo/` already drives the real `Transport` in a
+   Vitest test; a Playwright run against the `build:demo` output would cover
+   the rendered flows on every PR.
 3. **Renderer tests.** `DecoGauge`, `ControlPanel` and the chart window have no
    automated coverage; they need a canvas mock or visual snapshots.
 4. **System info layout at narrow widths.** The "specifications" plaque overlaps
@@ -853,9 +859,13 @@ What remains, ordered by value:
   which reads the `:root` custom properties in `deco.css`.
 - `__DEV__` gates the query-string mocks, the `?ws=` endpoint override and the
   `window.__watchdog` hook used by headless checks; none exist in production.
+- `__DEMO__` gates the simulated engine; it is true only in `build:demo`,
+  which writes self-contained static output (page, bundle, css, fonts,
+  models) to `dist_demo/` for any `publicPath`. Page assets are referenced
+  relatively so the panel works below a sub-path.
 - The dev build uses a non-`eval` source map because the host's CSP forbids
   `eval`.
 
 ---
 
-**Last Updated**: 2026-09-27
+**Last Updated**: 2026-10-20

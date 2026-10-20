@@ -127,6 +127,7 @@ dist
 .pnp.*
 
 front_panel/dist/
+front_panel/dist_demo/
 
 /logs/*.json
 
