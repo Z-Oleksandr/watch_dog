@@ -71,6 +71,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Simulated sensor data may only ever ship in the demo build.
+      - name: Assert production bundle has no demo code
+        run: "! grep -l 'demo://simulated-engine' dist/*.js"
+
+      - name: Build website demo
+        run: npm run build:demo -- --env publicPath=/watch_dog/
+
       - name: Audit runtime dependencies
         run: npm audit --omit=dev --audit-level=high
 
