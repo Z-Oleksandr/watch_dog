@@ -147,3 +147,23 @@ From `front_panel/`:
 - `npm run check` runs ESLint, Prettier and the Vitest suite; CI runs the same plus `npm audit` on runtime dependencies.
 - Development builds accept `?ws=ws://host:8999` to connect straight to a remote engine, and `?mock_temps=1|none` / `?mock_disks=N` to fake sensors (mocked disks include drive temperatures). Neither exists in production builds.
 - Coding rules live in `engine/code_rules.md` and `front_panel/code_rules.md`.
+
+## Website demo
+
+`npm run build:demo` (from `front_panel/`) builds a self-contained demo of the panel into `front_panel/dist_demo/`. The engine is simulated in the visitor's browser: the panel talks to an in-page stand-in that speaks the exact engine protocol, so every gauge, the specifications plaque, recordings and charts, logging and Docker log portals all work without a server process, WebSocket or host access. Each visitor gets their own simulated machine.
+
+```
+npm ci
+npm run build:demo -- --env publicPath=/watch_dog/ --env returnUrl=/
+```
+
+| Option       | Default | Meaning                                                                 |
+| ------------ | ------- | ----------------------------------------------------------------------- |
+| `publicPath` | `/`     | URL path the demo is served from; must start and end with `/`.          |
+| `returnUrl`  | `/`     | Target of the ribbon's "Return" link; a site path or an `https://` URL. |
+
+Hosting: serve `dist_demo/` as static files at `publicPath` (a request without the trailing slash should redirect to it). The page needs no inline scripts or styles and makes no network requests besides its own files, so it runs under the same strict policy as the real panel (`default-src 'self'`, see `front_panel/server/app.js`). Hashed `*.js` files can be cached as immutable; `index.html` should be `no-cache`.
+
+The simulation is compiled only into this build. `npm run build` never contains it, and CI fails if it does.
+
+The `demo_app` branch is what the website's submodule tracks. Promote a new version of `main` to the website by merging `main` into `demo_app` through a pull request, then updating the submodule pointer in the website repository.
