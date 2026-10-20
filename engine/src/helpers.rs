@@ -1,57 +1,191 @@
-use std::{
-    ffi::OsStr, 
-    collections::HashSet, 
-    path::Path, 
-    fs, 
-    io
-};
+use std::collections::HashSet;
+use std::ffi::OsStr;
+use std::path::Path;
 
-// For linux we need to filter non-physical drives
-pub fn is_not_pidor(disk_name: &OsStr, disk_register: &mut HashSet<String>) -> bool {
-    let pidors: [String; 3] = [
-        String::from("tmpfs"),
-        String::from("overlay"),
-        String::from("devtmpfs")
-    ];
+// In-memory and layered filesystems that report no physical storage
+const VIRTUAL_FILESYSTEMS: [&str; 3] = ["tmpfs", "overlay", "devtmpfs"];
 
-    let clean_disk_name = disk_name
-        .to_str()
-        .unwrap()
-        .trim_matches('\"')
-        .to_string();
-    let not_pidor = !pidors.contains(&clean_disk_name);
-    if not_pidor && disk_register.insert(clean_disk_name) {
-        return true
+// System partitions and snap images are not storage worth monitoring
+const EXCLUDED_MOUNT_PREFIXES: [&str; 3] = ["/boot", "/var/snap", "/var/lib/snapd"];
+
+fn is_excluded_mount(mount_point: &Path) -> bool {
+    match mount_point.to_str() {
+        Some(path) => EXCLUDED_MOUNT_PREFIXES
+            .iter()
+            .any(|prefix| path.starts_with(prefix)),
+        None => true,
     }
-    false
 }
 
+/// The device name sysinfo reports, without the quotes some platforms add.
+pub fn clean_disk_name(disk_name: &OsStr) -> Option<String> {
+    disk_name
+        .to_str()
+        .map(|name| name.trim_matches('\"').to_string())
+}
+
+/// Decides whether a disk belongs in the monitored set, recording it in
+/// `disk_register` the first time it is seen.
+///
+/// For linux we need to filter non-physical drives.
+pub fn is_monitored_disk(
+    disk_name: &OsStr,
+    disk_register: &mut HashSet<String>,
+    disk_mount_point: &Path,
+) -> bool {
+    let name = match clean_disk_name(disk_name) {
+        Some(name) => name,
+        None => return false,
+    };
+    if VIRTUAL_FILESYSTEMS.contains(&name.as_str()) || is_excluded_mount(disk_mount_point) {
+        return false;
+    }
+    disk_register.insert(name)
+}
+
+/// Decides whether a disk seen this tick is one of the monitored set, and has
+/// not already been counted through another mount point.
 pub fn is_initialized_disk(
-        disk_name: &OsStr, 
-        disk_register: &HashSet<String>,
-        disk_mount_point: &Path
-    ) -> bool {
-    // Exclude Snap-related mounts
-    let mount_path = disk_mount_point.to_str().unwrap();
-    if mount_path.starts_with("/var/snap") {
+    disk_name: &OsStr,
+    disk_register: &HashSet<String>,
+    disk_mount_point: &Path,
+    seen_this_tick: &mut HashSet<String>,
+) -> bool {
+    if is_excluded_mount(disk_mount_point) {
         return false;
     }
 
-    let clean_disk_name = disk_name
-        .to_str()
-        .unwrap()
-        .trim_matches('\"')
-        .to_string();
-    if disk_register.contains(&clean_disk_name) {
-        return true
+    let name = match clean_disk_name(disk_name) {
+        Some(name) => name,
+        None => return false,
+    };
+    if !disk_register.contains(&name) {
+        return false;
     }
-    false
+    // A device mounted several times (btrfs subvolumes) reports once
+    seen_this_tick.insert(name)
 }
 
-pub fn ensure_dir(dir: &str) -> io::Result<()> {
-    let path = Path::new(dir);
-    if !path.exists() {
-        fs::create_dir(path)?;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn os(value: &str) -> &OsStr {
+        OsStr::new(value)
     }
-    Ok(())
+
+    #[test]
+    fn registers_a_physical_disk_once() {
+        let mut register = HashSet::new();
+        assert!(is_monitored_disk(
+            os("/dev/nvme0n1p2"),
+            &mut register,
+            Path::new("/")
+        ));
+        assert!(!is_monitored_disk(
+            os("/dev/nvme0n1p2"),
+            &mut register,
+            Path::new("/home")
+        ));
+        assert_eq!(register.len(), 1);
+    }
+
+    #[test]
+    fn rejects_virtual_filesystems() {
+        let mut register = HashSet::new();
+        assert!(!is_monitored_disk(
+            os("tmpfs"),
+            &mut register,
+            Path::new("/run")
+        ));
+        assert!(!is_monitored_disk(
+            os("overlay"),
+            &mut register,
+            Path::new("/var/lib/docker")
+        ));
+        assert!(!is_monitored_disk(
+            os("devtmpfs"),
+            &mut register,
+            Path::new("/dev")
+        ));
+        assert!(register.is_empty());
+    }
+
+    #[test]
+    fn rejects_boot_and_snap_mounts() {
+        let mut register = HashSet::new();
+        assert!(!is_monitored_disk(
+            os("/dev/sda1"),
+            &mut register,
+            Path::new("/boot/efi")
+        ));
+        assert!(!is_monitored_disk(
+            os("/dev/loop0"),
+            &mut register,
+            Path::new("/var/snap/x")
+        ));
+        assert!(!is_monitored_disk(
+            os("/dev/loop1"),
+            &mut register,
+            Path::new("/var/lib/snapd/snaps")
+        ));
+        assert!(register.is_empty());
+    }
+
+    #[test]
+    fn strips_quotes_from_disk_names() {
+        let mut register = HashSet::new();
+        assert!(is_monitored_disk(
+            os("\"/dev/sda1\""),
+            &mut register,
+            Path::new("/")
+        ));
+        assert!(register.contains("/dev/sda1"));
+    }
+
+    #[test]
+    fn counts_a_registered_disk_once_per_tick() {
+        let mut register = HashSet::new();
+        is_monitored_disk(os("/dev/sda1"), &mut register, Path::new("/"));
+
+        let mut seen = HashSet::new();
+        assert!(is_initialized_disk(
+            os("/dev/sda1"),
+            &register,
+            Path::new("/"),
+            &mut seen
+        ));
+        // Same device, second mount point: already accounted for.
+        assert!(!is_initialized_disk(
+            os("/dev/sda1"),
+            &register,
+            Path::new("/home"),
+            &mut seen
+        ));
+    }
+
+    #[test]
+    fn ignores_disks_that_were_never_registered() {
+        let register = HashSet::new();
+        let mut seen = HashSet::new();
+        assert!(!is_initialized_disk(
+            os("/dev/sdb1"),
+            &register,
+            Path::new("/mnt"),
+            &mut seen
+        ));
+    }
+
+    #[test]
+    fn excluded_mounts_are_skipped_per_tick_too() {
+        let mut register = HashSet::new();
+        register.insert("/dev/sda1".to_string());
+        let mut seen = HashSet::new();
+        assert!(!is_initialized_disk(
+            os("/dev/sda1"),
+            &register,
+            Path::new("/boot"),
+            &mut seen
+        ));
+    }
 }
